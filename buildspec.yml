@@ -1,0 +1,42 @@
+version: 0.2
+
+# AWS CodeBuild用ビルド仕様
+# frontディレクトリのReactアプリをビルドしてS3にデプロイ
+
+env:
+  variables:
+    NODE_VERSION: "22"
+    S3_BUCKET: "speed-match-card-game" # 環境変数として設定推奨
+    # CLOUDFRONT_DISTRIBUTION_ID: "your-distribution-id" # CloudFront使用時
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - echo "Installing dependencies..."
+      - cd front
+      - npm ci --production=false
+      
+  pre_build:
+    commands:
+      - echo "Running pre-build checks..."
+      - node --version
+      - npm --version
+      - echo "Build started on `date`"
+      
+  build:
+    commands:
+      - echo "Building React application..."
+      - npm run build
+      - echo "Build completed on `date`"
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'front/dist'
+  name: speedmatch-frontend-$(date +%Y%m%d-%H%M%S)
+
+cache:
+  paths:
+    - 'front/node_modules/**/*'
