@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スピードマッチ - デザインシステム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+
+        h2 {
+            color: #333;
+            margin: 40px 0 20px 0;
+            font-size: 24px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #555;
+            margin: 25px 0 15px 0;
+            font-size: 18px;
+        }
+
+        /* ========== ヘッダー ========== */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        /* ========== フッター ========== */
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ========== ボタン ========== */
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-large {
+            padding: 20px 40px;
+            font-size: 18px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ========== フォーム要素 ========== */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .form-range {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #e0e0e0;
+            outline: none;
+        }
+
+        /* ========== カード ========== */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .card-content {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* ========== リスト ========== */
+        .list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .list-item {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .list-item:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ========== バッジ ========== */
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        /* ========== モーダル/ダイアログ ========== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-body {
+            margin-bottom: 25px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* ========== プレイヤーカード ========== */
+        .player-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .player-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .player-info {
+            flex: 1;
+        }
+
+        .player-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .player-status {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* ========== ナビゲーションメニュー ========== */
+        .nav-menu {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .nav-menu ul {
+            list-style: none;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-menu li a {
+            display: block;
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav-menu li a:hover,
+        .nav-menu li a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* ========== プログレスバー ========== */
+        .progress {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* ========== アラート ========== */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #0c5460;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #155724;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #856404;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #721c24;
+        }
+
+        .demo-section {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 スピードマッチ - デザインシステム</h1>
+
+        <!-- ヘッダー -->
+        <div class="demo-section">
+            <h2>ヘッダー</h2>
+            <div class="header">
+                <div class="header-title">スピードマッチ</div>
+                <div class="header-info">
+                    <div class="header-user">
+                        <div class="header-avatar">A</div>
+                        <span>プレイヤー名</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ナビゲーションメニュー -->
+        <div class="demo-section">
+            <h2>ナビゲーションメニュー</h2>
+            <nav class="nav-menu">
+                <ul>
+                    <li><a href="#" class="active">ホーム</a></li>
+                    <li><a href="#">ルーム作成</a></li>
+                    <li><a href="#">ルーム一覧</a></li>
+                    <li><a href="#">遊び方</a></li>
+                    <li><a href="#">設定</a></li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- ボタン -->
+        <div class="demo-section">
+            <h2>ボタン</h2>
+            
+            <h3>基本ボタン</h3>
+            <div class="button-grid">
+                <button class="btn btn-primary">プライマリー</button>
+                <button class="btn btn-secondary">セカンダリー</button>
+                <button class="btn btn-success">成功</button>
+                <button class="btn btn-danger">危険</button>
+                <button class="btn btn-outline">アウトライン</button>
+                <button class="btn btn-primary" disabled>無効</button>
+            </div>
+
+            <h3>サイズバリエーション</h3>
+            <div class="button-grid">
+                <button class="btn btn-primary btn-small">小さい</button>
+                <button class="btn btn-primary">通常</button>
+                <button class="btn btn-primary btn-large">大きい</button>
+            </div>
+        </div>
+
+        <!-- フォーム要素 -->
+        <div class="demo-section">
+            <h2>フォーム要素</h2>
+            
+            <div class="form-group">
+                <label class="form-label">テキスト入力</label>
+                <input type="text" class="form-input" placeholder="プレイヤー名を入力">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">セレクトボックス</label>
+                <select class="form-select">
+                    <option>2人</option>
+                    <option>3人</option>
+                    <option>4人</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">チェックボックス</label>
+                <div class="form-checkbox">
+                    <input type="checkbox" id="public">
+                    <label for="public">公開ルームにする</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">スライダー（初期手札枚数: 5枚）</label>
+                <input type="range" class="form-range" min="5" max="10" value="5">
+            </div>
+        </div>
+
+        <!-- カード -->
+        <div class="demo-section">
+            <h2>カード</h2>
+            <div class="card">
+                <div class="card-title">カードタイトル</div>
+                <div class="card-content">
+                    これはカードコンポーネントです。ルーム情報や説明文などを表示するのに使用します。
+                </div>
+            </div>
+        </div>
+
+        <!-- リスト -->
+        <div class="demo-section">
+            <h2>リスト</h2>
+            <div class="list">
+                <div class="list-item">
+                    <span>ルーム名: 初心者歓迎</span>
+                    <span class="badge badge-success">2/4人</span>
+                </div>
+                <div class="list-item">
+                    <span>ルーム名: ガチ勢専用</span>
+                    <span class="badge badge-warning">3/4人</span>
+                </div>
+                <div class="list-item">
+                    <span>ルーム名: まったり</span>
+                    <span class="badge badge-primary">1/4人</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- バッジ -->
+        <div class="demo-section">
+            <h2>バッジ</h2>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <span class="badge badge-primary">プライマリー</span>
+                <span class="badge badge-success">成功</span>
+                <span class="badge badge-warning">警告</span>
+                <span class="badge badge-danger">危険</span>
+            </div>
+        </div>
+
+        <!-- プレイヤーカード -->
+        <div class="demo-section">
+            <h2>プレイヤーカード</h2>
+            <div class="player-card">
+                <div class="player-avatar">👤</div>
+                <div class="player-info">
+                    <div class="player-name">プレイヤー1</div>
+                    <div class="player-status">準備完了</div>
+                </div>
+                <span class="badge badge-success">ホスト</span>
+            </div>
+            <div class="player-card">
+                <div class="player-avatar">🎮</div>
+                <div class="player-info">
+                    <div class="player-name">プレイヤー2</div>
+                    <div class="player-status">待機中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- プログレスバー -->
+        <div class="demo-section">
+            <h2>プログレスバー</h2>
+            <div class="progress">
+                <div class="progress-bar" style="width: 75%;">75%</div>
+            </div>
+        </div>
+
+        <!-- アラート -->
+        <div class="demo-section">
+            <h2>アラート</h2>
+            <div class="alert alert-info">
+                <span>ℹ️</span>
+                <span>これは情報メッセージです。</span>
+            </div>
+            <div class="alert alert-success">
+                <span>✅</span>
+                <span>ルームの作成に成功しました！</span>
+            </div>
+            <div class="alert alert-warning">
+                <span>⚠️</span>
+                <span>接続が不安定です。</span>
+            </div>
+            <div class="alert alert-danger">
+                <span>❌</span>
+                <span>エラーが発生しました。</span>
+            </div>
+        </div>
+
+        <!-- モーダル（表示例） -->
+        <div class="demo-section">
+            <h2>モーダル/ダイアログ</h2>
+            <div class="modal">
+                <div class="modal-header">確認</div>
+                <div class="modal-body">
+                    本当にゲームを終了しますか？
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary">キャンセル</button>
+                    <button class="btn btn-danger">終了する</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- フッター -->
+        <div class="demo-section">
+            <h2>フッター</h2>
+            <div class="footer">
+                <div class="footer-links">
+                    <a href="#" class="footer-link">利用規約</a>
+                    <a href="#" class="footer-link">プライバシーポリシー</a>
+                    <a href="#" class="footer-link">お問い合わせ</a>
+                </div>
+                <div>© 2025 スピードマッチ</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
