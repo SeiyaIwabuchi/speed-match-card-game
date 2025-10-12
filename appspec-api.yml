@@ -3,14 +3,15 @@ os: linux
 files:
   # デプロイスクリプト
   - source: deploy-scripts/
-    destination: /home/ec2-user/speedmatch/deploy-scripts
+    destination: /home/ec2-user/speedmatch/
   # Docker Compose設定
   - source: container/
     destination: /home/ec2-user/speedmatch/container
   # appspec.yml自体
   - source: appspec-api.yml
-    destination: /home/ec2-user/speedmatch
-  - source: 'speed-match-card-game-api-all.jar'  # ビルド済みJAR
+    destination: /home/ec2-user/speedmatch/
+  # ビルド済みJAR
+  - source: 'api/build/libs/speed-match-card-game-api-all.jar'
     destination: /home/ec2-user/speedmatch/api/build/libs/
 hooks:
   ApplicationStop:
