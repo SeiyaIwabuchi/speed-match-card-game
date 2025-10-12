@@ -15,7 +15,9 @@ services:
       - speedmatch-network
 
   ktor-app:
-    build: ./api
+    build:
+      context: ../../
+      dockerfile: container/dev/Dockerfile
     ports:
       - "8080:8080"
     environment:

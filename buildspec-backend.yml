@@ -34,8 +34,11 @@ phases:
 
 artifacts:
   files:
-    - '*-all.jar'  # Fat JARのみを含める
-  base-directory: 'api/build/libs'
+    - 'api/build/libs/*-all.jar'  # Fat JARのみを含める
+    - 'container/**'          # Docker関連ファイルを含める
+    - 'appspec-api.yml'       # appspec.ymlを含める
+    - 'deploy-scripts/**/*'  # デプロイスクリプトを含める'
+  base-directory: './'
   name: speedmatch-backend
 
 cache:
