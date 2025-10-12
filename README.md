@@ -47,7 +47,8 @@
 - ホスティング: AWS S3
 
 ### バックエンド
-- **Node.js** + **Express** - APIサーバー
+- **Kotlin** + **Ktor** - APIサーバー
+- **Exposed** - ORM
 - **PostgreSQL 15** - データベース
 - **Docker Compose** - コンテナオーケストレーション
 - **Nginx** - リバースプロキシ
