@@ -10,7 +10,7 @@ files:
   # appspec.yml自体
   - source: appspec-api.yml
     destination: /home/ec2-user/speedmatch
-  - source: '*-all.jar'  # ビルド済みJAR
+  - source: 'speed-match-card-game-api-all.jar'  # ビルド済みJAR
     destination: /home/ec2-user/speedmatch/api/build/libs/
 hooks:
   ApplicationStop:
