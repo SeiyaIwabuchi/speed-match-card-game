@@ -1,0 +1,44 @@
+version: 0.2
+
+# AWS CodeBuild用ビルド仕様 - Backend (Ktor API)
+# apiディレクトリのKotlin+Ktorアプリをビルド
+# Gradle Shadowプラグインで実行可能なFat JARを作成
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto21
+    commands:
+      - echo "Installing Java dependencies..."
+      - cd api
+      - chmod +x gradlew
+      
+  pre_build:
+    commands:
+      - echo "Running pre-build checks..."
+      - java --version
+      - ./gradlew --version
+      - echo "Build started on `date`"
+      
+  build:
+    commands:
+      - echo "Building Ktor application and creating Fat JAR..."
+      - ./gradlew clean buildFatJar -x test
+      - echo "Build completed on `date`"
+      
+  post_build:
+    commands:
+      - echo "Preparing artifacts..."
+      - ls -la build/libs/
+      - echo "Backend build finished"
+
+artifacts:
+  files:
+    - '*-all.jar'  # Fat JARのみを含める
+  base-directory: 'api/build/libs'
+  name: speedmatch-backend
+
+cache:
+  paths:
+    - 'api/.gradle/**/*'
+    - 'api/build/**/*'

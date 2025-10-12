@@ -52,11 +52,13 @@
 - **PostgreSQL 15** - データベース
 - **Docker Compose** - コンテナオーケストレーション
 - **Nginx** - リバースプロキシ
+- **Gradle Shadow** - Fat JAR生成
 
 ### インフラ
 - **AWS EC2** (t3.micro) - アプリケーションサーバー
 - **AWS S3** - 静的ファイルホスティング
-- **AWS CodePipeline** - CI/CD
+- **AWS CodePipeline** - CI/CD（並列ビルド）
+- **AWS CodeBuild** - ビルド自動化
 
 ### 月額コスト
 約 **$0-1** (AWS無料枠を活用)
@@ -65,10 +67,12 @@
 
 ```
 speed-match-card-game/
-├── front/              # フロントエンド (React)
-├── api/                # バックエンドAPI (Node.js/Express)
-├── container/          # Docker設定ファイル
-└── docs/               # プロジェクトドキュメント
+├── front/                    # フロントエンド (React + TypeScript + Vite)
+├── api/                      # バックエンドAPI (Kotlin + Ktor)
+├── container/                # Docker設定ファイル
+├── buildspec-frontend.yml    # CodeBuild設定 (Frontend)
+├── buildspec-backend.yml     # CodeBuild設定 (Backend)
+└── docs/                     # プロジェクトドキュメント
     ├── 企画書.md
     ├── 機能一覧.md
     ├── 画面一覧.md
@@ -76,7 +80,8 @@ speed-match-card-game/
     ├── システム構成.md
     ├── DB設計.md
     ├── API仕様書.md
-    └── デザインシステム.html
+    ├── デザインシステム.html
+    └── codepipeline-setup.md  # CI/CD設定ガイド
 ```
 
 ## 🚀 セットアップ
@@ -100,11 +105,12 @@ npm start
 
 ```bash
 cd api
-npm install
-npm run dev
+./gradlew run
 ```
 
-APIサーバーは `http://localhost:3000` で起動します。
+APIサーバーは `http://localhost:8080` で起動します。
+
+Swagger UIは `http://localhost:8080/swagger` でアクセスできます。
 
 ### Docker Compose
 

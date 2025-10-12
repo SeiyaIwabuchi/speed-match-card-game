@@ -1,0 +1,22 @@
+openapi: "3.1.0"
+info:
+  title: "Speed Match API"
+  description: "スピードマッチ - オンライン対戦型カードゲームAPI"
+  version: "0.0.1"
+servers:
+  - url: "http://localhost:8080"
+    description: "Development server"
+paths:
+  /:
+    get:
+      summary: "Hello World"
+      description: "シンプルなHello Worldエンドポイント"
+      responses:
+        "200":
+          description: "成功レスポンス"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+                example: "Hello World!"
+
