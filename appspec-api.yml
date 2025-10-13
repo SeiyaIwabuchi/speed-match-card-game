@@ -1,17 +1,7 @@
 version: 0.0
 os: linux
 files:
-  # デプロイスクリプト
-  - source: deploy-scripts
-    destination: /home/ec2-user/speedmatch/
-  # Docker Compose設定
-  - source: container
-    destination: /home/ec2-user/speedmatch/
-  # appspec.yml自体
-  - source: appspec-api.yml
-    destination: /home/ec2-user/speedmatch/
-  # ビルド済みJAR
-  - source: 'api'
+  - source: /
     destination: /home/ec2-user/speedmatch/
 hooks:
   ApplicationStop:
