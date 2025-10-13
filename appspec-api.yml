@@ -6,13 +6,13 @@ files:
     destination: /home/ec2-user/speedmatch/
   # Docker Compose設定
   - source: container
-    destination: /home/ec2-user/speedmatch/container/
+    destination: /home/ec2-user/speedmatch/
   # appspec.yml自体
   - source: appspec-api.yml
     destination: /home/ec2-user/speedmatch/
   # ビルド済みJAR
-  - source: 'api/build/libs/speed-match-card-game-api-all.jar'
-    destination: /home/ec2-user/speedmatch/api/build/libs/
+  - source: 'api'
+    destination: /home/ec2-user/speedmatch/
 hooks:
   ApplicationStop:
     - location: deploy-scripts/stop_application.sh

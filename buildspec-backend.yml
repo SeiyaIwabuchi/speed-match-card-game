@@ -35,7 +35,7 @@ phases:
 artifacts:
   files:
     - 'api/build/libs/speed-match-card-game-api-all.jar'  # Fat JARのみを含める
-    - 'container/**'          # Docker関連ファイルを含める
+    - 'container/**/*'          # Docker関連ファイルを含める
     - 'appspec-api.yml'       # appspec.ymlを含める
     - 'deploy-scripts/**/*'  # デプロイスクリプトを含める'
   base-directory: './'
