@@ -17,7 +17,7 @@ services:
   ktor-app:
     build:
       context: ../../
-      dockerfile: container/dev/Dockerfile
+      dockerfile: container/dev/api/Dockerfile
     ports:
       - "8080:8080"
     environment:
