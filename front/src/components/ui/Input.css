@@ -1,0 +1,224 @@
+/* Input Component Styles */
+
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.input-wrapper--full-width {
+  width: 100%;
+}
+
+.input-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-primary);
+  line-height: var(--leading-tight);
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Base Input Styles */
+.input-field,
+.textarea-field {
+  width: 100%;
+  padding: var(--spacing-2-5) var(--spacing-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  transition: var(--transition-all);
+  outline: none;
+}
+
+.input-field:focus,
+.textarea-field:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.input-field::placeholder,
+.textarea-field::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Input Variants */
+
+/* Default variant uses base styles without additional modifications */
+
+/* Filled */
+.input-field--filled,
+.textarea-field--filled {
+  background-color: var(--color-background-secondary);
+  border-color: transparent;
+}
+
+.input-field--filled:focus,
+.textarea-field--filled:focus {
+  background-color: var(--color-background);
+  border-color: var(--color-border-focus);
+}
+
+/* Outlined */
+.input-field--outlined,
+.textarea-field--outlined {
+  border-width: 2px;
+  border-color: var(--color-border-secondary);
+}
+
+.input-field--outlined:focus,
+.textarea-field--outlined:focus {
+  border-color: var(--color-border-focus);
+}
+
+/* Full Width */
+.input-field--full-width,
+.textarea-field--full-width {
+  width: 100%;
+}
+
+/* With Icons - padding adjustments handled by icon positioning */
+
+.input-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.input-icon--left {
+  left: var(--spacing-3);
+}
+
+.input-icon--right {
+  right: var(--spacing-3);
+}
+
+.input-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Adjust padding when icons are present */
+.input-container:has(.input-icon--left) .input-field {
+  padding-left: calc(var(--spacing-3) + 1rem + var(--spacing-2));
+}
+
+.input-container:has(.input-icon--right) .input-field {
+  padding-right: calc(var(--spacing-3) + 1rem + var(--spacing-2));
+}
+
+/* Fallback for browsers that don't support :has() */
+.input-field--with-icons.input-field {
+  padding-left: calc(var(--spacing-3) + 1rem + var(--spacing-2));
+  padding-right: calc(var(--spacing-3) + 1rem + var(--spacing-2));
+}
+
+/* Error State */
+.input-field--error,
+.textarea-field--error {
+  border-color: var(--color-error-500);
+}
+
+.input-field--error:focus,
+.textarea-field--error:focus {
+  border-color: var(--color-error-500);
+  box-shadow: 0 0 0 3px var(--color-error-100);
+}
+
+/* Disabled State */
+.input-field:disabled,
+.textarea-field:disabled {
+  background-color: var(--color-gray-100);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.input-field:disabled::placeholder,
+.textarea-field:disabled::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Textarea Specific Styles */
+.textarea-field {
+  min-height: 4rem;
+  line-height: var(--leading-relaxed);
+  resize: vertical;
+}
+
+/* Textarea Resize Options */
+.textarea-field--resize-none {
+  resize: none;
+}
+
+.textarea-field--resize-vertical {
+  resize: vertical;
+}
+
+.textarea-field--resize-horizontal {
+  resize: horizontal;
+}
+
+.textarea-field--resize-both {
+  resize: both;
+}
+
+/* Helper Text */
+.input-hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-tight);
+}
+
+.input-error {
+  font-size: var(--text-sm);
+  color: var(--color-error-600);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-tight);
+}
+
+/* Focus States for Better Accessibility */
+.input-field:focus-visible,
+.textarea-field:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Invalid State (HTML5 validation) */
+.input-field:invalid:not(:focus):not(:placeholder-shown),
+.textarea-field:invalid:not(:focus):not(:placeholder-shown) {
+  border-color: var(--color-error-500);
+}
+
+/* Valid State (HTML5 validation) */
+.input-field:valid:not(:focus):not(:placeholder-shown),
+.textarea-field:valid:not(:focus):not(:placeholder-shown) {
+  border-color: var(--color-success-500);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .input-field,
+  .textarea-field {
+    font-size: var(--text-base);
+    min-height: 44px; /* Touch target size */
+  }
+  
+  .textarea-field {
+    min-height: 3rem;
+  }
+}
