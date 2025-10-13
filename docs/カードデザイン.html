@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スピードマッチ カード 1-13</title>
+    <style>
+        /* ベースとリセット */
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 20px;
+            min-height: 100vh;
+        }
+
+        /* カードコンテナ */
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        /* カード共通スタイル */
+        .card {
+            width: 140px;
+            height: 200px;
+            border-radius: 20px;
+            padding: 15px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            position: relative;
+            cursor: pointer;
+            /* 美しいグラデーションと立体感 */
+            background: linear-gradient(145deg, var(--color-light), var(--color-mid), var(--color-dark));
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card:hover {
+            transform: translateY(-8px) rotateX(5deg);
+            box-shadow: 
+                0 15px 35px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        .card:active {
+            transform: translateY(-5px) rotateX(2deg);
+        }
+
+        /* 数字エリア */
+        .number-area {
+            font-size: 4.5rem;
+            font-weight: 900;
+            text-shadow: 
+                0 1px 2px rgba(0, 0, 0, 0.2),
+                0 0 25px rgba(255, 255, 255, 0.8),
+                0 0 10px rgba(255, 255, 255, 0.6);
+            line-height: 1;
+            margin-top: 10px;
+            letter-spacing: -0.05em;
+            background: linear-gradient(45deg, #ffffff, #f8f9ff, #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: brightness(1.1) contrast(1.05);
+        }
+
+        /* アイコンエリア */
+        .icon-area {
+            width: 85%;
+            min-height: 45px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 3px;
+            padding: 8px;
+            margin-bottom: 5px;
+            backdrop-filter: blur(5px);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon-area .icon {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+            box-shadow: 
+                0 1px 2px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            animation: sparkle 2s infinite alternate;
+        }
+
+        @keyframes sparkle {
+            0% { opacity: 0.7; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.1); }
+        }
+        
+        /* 特別なカードデザイン */
+        .card.value-1 .number-area::after {
+            content: '✨';
+            font-size: 1.2rem;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            animation: rotate 3s linear infinite;
+        }
+
+        .card.value-13 .number-area::after {
+            content: '👑';
+            font-size: 1.8rem;
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* ----- 改良されたカラーバリエーション ----- */
+
+        /* 1 (ブルー・オーシャン) */
+        .value-1 { --color-light: #4facfe; --color-mid: #00b4db; --color-dark: #0083b0; }
+        /* 2 (エメラルド・グリーン) */
+        .value-2 { --color-light: #43e97b; --color-mid: #38d9a9; --color-dark: #20bf6b; }
+        /* 3 (サンライズ・オレンジ) */
+        .value-3 { --color-light: #fa709a; --color-mid: #fee140; --color-dark: #f093fb; }
+        /* 4 (パープル・ドリーム) */
+        .value-4 { --color-light: #a8edea; --color-mid: #fed6e3; --color-dark: #d299c2; }
+        /* 5 (ローズ・ゴールド) */
+        .value-5 { --color-light: #ffecd2; --color-mid: #fcb69f; --color-dark: #ff8a80; }
+        /* 6 (ミッドナイト・ブルー) */
+        .value-6 { --color-light: #667eea; --color-mid: #764ba2; --color-dark: #5a4fcf; }
+        /* 7 (フォレスト・グリーン) */
+        .value-7 { --color-light: #56ab2f; --color-mid: #a8e6cf; --color-dark: #2d8a3e; }
+        /* 8 (フレーム・オレンジ) */
+        .value-8 { --color-light: #ff9a56; --color-mid: #ff6b35; --color-dark: #e55039; }
+        /* 9 (コズミック・パープル) */
+        .value-9 { --color-light: #c471ed; --color-mid: #f64f59; --color-dark: #8e44ad; }
+        /* 10 (チェリー・ブロッサム) */
+        .value-10 { --color-light: #ff9a9e; --color-mid: #fecfef; --color-dark: #e84393; }
+        /* 11 (オーシャン・ブリーズ) */
+        .value-11 { --color-light: #74b9ff; --color-mid: #0984e3; --color-dark: #2d3436; }
+        /* 12 (ミント・フレッシュ) */
+        .value-12 { --color-light: #55efc4; --color-mid: #00b894; --color-dark: #00a085; }
+        /* 13 (ゴールデン・サンセット) */
+        .value-13 { --color-light: #ffd89b; --color-mid: #19547b; --color-dark: #f093fb; }
+        
+    </style>
+</head>
+<body>
+
+    <div class="card-container">
+        <div class="card value-1">
+            <div class="number-area">1</div>
+            <div class="icon-area"><span class="icon"></span></div>
+        </div>
+        <div class="card value-2">
+            <div class="number-area">2</div>
+            <div class="icon-area"><span class="icon"></span><span class="icon"></span></div>
+        </div>
+        <div class="card value-3">
+            <div class="number-area">3</div>
+            <div class="icon-area"><span class="icon"></span><span class="icon"></span><span class="icon"></span></div>
+        </div>
+        <div class="card value-4">
+            <div class="number-area">4</div>
+            <div class="icon-area"><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span></div>
+        </div>
+        <div class="card value-5">
+            <div class="number-area">5</div>
+            <div class="icon-area"><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span></div>
+        </div>
+        <div class="card value-6">
+            <div class="number-area">6</div>
+            <div class="icon-area">
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span>
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span>
+            </div>
+        </div>
+        <div class="card value-7">
+            <div class="number-area">7</div>
+            <div class="icon-area">
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span>
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span>
+            </div>
+        </div>
+        <div class="card value-8">
+            <div class="number-area">8</div>
+            <div class="icon-area">
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+            </div>
+        </div>
+        <div class="card value-9">
+            <div class="number-area">9</div>
+            <div class="icon-area">
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+            </div>
+        </div>
+        <div class="card value-10">
+            <div class="number-area">10</div>
+            <div class="icon-area">
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+            </div>
+        </div>
+        <div class="card value-11">
+            <div class="number-area">11</div>
+            <div class="icon-area">
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+            </div>
+        </div>
+        <div class="card value-12">
+            <div class="number-area">12</div>
+            <div class="icon-area">
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+            </div>
+        </div>
+        <div class="card value-13">
+            <div class="number-area">13</div>
+            <div class="icon-area">
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+                <span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span><span class="icon"></span>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>
