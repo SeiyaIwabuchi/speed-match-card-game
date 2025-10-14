@@ -1,0 +1,77 @@
+/* Container Component Styles */
+
+.container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--spacing-4);
+}
+
+/* Container Sizes */
+.container--sm {
+  max-width: 640px;
+}
+
+.container--md {
+  max-width: 768px;
+}
+
+.container--lg {
+  max-width: 1024px;
+}
+
+.container--xl {
+  max-width: 1400px;
+}
+
+.container--full {
+  max-width: none;
+}
+
+/* Container Variants - default uses base styling without modifications */
+
+.container--glass {
+  background: var(--color-background-glass);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-10);
+  box-shadow: 
+    var(--shadow-xl),
+    var(--shadow-inset);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.container--gradient {
+  background: var(--color-background-gradient);
+  min-height: 100vh;
+  padding: var(--spacing-5);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .container {
+    padding: 0 var(--spacing-3);
+  }
+  
+  .container--glass {
+    padding: var(--spacing-6);
+    border-radius: var(--radius-xl);
+  }
+  
+  .container--gradient {
+    padding: var(--spacing-4);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 var(--spacing-2);
+  }
+  
+  .container--glass {
+    padding: var(--spacing-4);
+  }
+  
+  .container--gradient {
+    padding: var(--spacing-3);
+  }
+}
