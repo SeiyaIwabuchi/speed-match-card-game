@@ -1,13 +1,21 @@
-import React from 'react';
-import { HashRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { PlayerProvider, usePlayer } from './contexts';
-import { HomePage, RoomsPage, ProfilePage, GamePage } from './pages';
+import { HomePage, RoomsPage, ProfilePage, GamePage, PlayerRegistrationPage } from './pages';
 import './App.css';
 
 // ナビゲーション機能を持つルーターコンポーネント
 const AppRoutes: React.FC = () => {
   const navigate = useNavigate();
-  const { player, updatePlayer } = usePlayer();
+  const location = useLocation();
+  const { player, updatePlayer, isRegistered } = usePlayer();
+
+  // 未登録ユーザーを登録画面にリダイレクト
+  useEffect(() => {
+    if (!isRegistered && location.pathname !== '/register') {
+      navigate('/register');
+    }
+  }, [isRegistered, location.pathname, navigate]);
 
   const handleNavigate = (page: string) => {
     switch (page) {
@@ -20,6 +28,9 @@ const AppRoutes: React.FC = () => {
       case 'profile':
         navigate('/profile');
         break;
+      case 'register':
+        navigate('/register');
+        break;
       default:
         if (page.startsWith('game/')) {
           const roomId = page.split('/')[1];
@@ -29,8 +40,21 @@ const AppRoutes: React.FC = () => {
     }
   };
 
+  const handleRegistrationComplete = () => {
+    navigate('/?registered=true');
+  };
+
   return (
     <Routes>
+      <Route 
+        path="/register" 
+        element={
+          <PlayerRegistrationPage 
+            onNavigate={handleNavigate}
+            onRegistrationComplete={handleRegistrationComplete}
+          />
+        } 
+      />
       <Route 
         path="/" 
         element={

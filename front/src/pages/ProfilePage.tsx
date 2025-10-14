@@ -199,7 +199,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             </Card>
 
             {/* アクション */}
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               <Button 
                 variant="primary" 
                 size="lg"
@@ -213,6 +213,20 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 onClick={() => onNavigate?.('rooms')}
               >
                 ゲームを開始
+              </Button>
+              
+              {/* デバッグ用リセット機能 */}
+              <Button 
+                variant="error" 
+                size="sm"
+                onClick={() => {
+                  if (confirm('アカウントデータをリセットしますか？この操作は元に戻せません。')) {
+                    localStorage.removeItem('speedmatch-player');
+                    window.location.reload();
+                  }
+                }}
+              >
+                データリセット（デバッグ用）
               </Button>
             </div>
           </div>

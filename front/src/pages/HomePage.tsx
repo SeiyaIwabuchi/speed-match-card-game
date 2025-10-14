@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Card, CardHeader, CardBody, Container, Header, Footer } from '../components';
 
 interface HomePageProps {
@@ -12,6 +13,26 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onNavigate, player }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    const registered = searchParams.get('registered');
+    if (registered === 'true' && player) {
+      setShowWelcome(true);
+      // URLパラメータをクリア
+      searchParams.delete('registered');
+      setSearchParams(searchParams);
+      
+      // 5秒後にウェルカムメッセージを非表示
+      const timer = setTimeout(() => {
+        setShowWelcome(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, setSearchParams, player]);
+
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
       <Container size="xl">
@@ -23,6 +44,35 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate, player }) => {
           />
           
           <main>
+            {/* 登録完了ウェルカムメッセージ */}
+            {showWelcome && player && (
+              <Card variant="elevated" className="mb-6 bg-gradient-to-r from-green-50 to-primary-50 border-green-200">
+                <div className="p-6 text-center">
+                  <div className="text-4xl mb-3">🎉</div>
+                  <h2 className="text-2xl font-bold text-green-700 mb-2">
+                    登録完了！ようこそ、{player.name}さん！
+                  </h2>
+                  <p className="text-green-600">
+                    アカウントの作成が完了しました。さっそくゲームを始めましょう！
+                  </p>
+                </div>
+              </Card>
+            )}
+            
+            {/* 通常のウェルカムメッセージ */}
+            {player && !showWelcome && (
+              <Card variant="elevated" className="mb-6 bg-gradient-to-r from-primary-50 to-secondary-50 border-primary-200">
+                <div className="p-6 text-center">
+                  <h2 className="text-2xl font-bold text-primary-700 mb-2">
+                    おかえりなさい、{player.name}さん！
+                  </h2>
+                  <p className="text-primary-600">
+                    今日も楽しいゲームタイムを過ごしましょう！
+                  </p>
+                </div>
+              </Card>
+            )}
+            
             <div className="text-center mb-6">
               <h1 className="h1">スピードマッチへようこそ！</h1>
               <p className="text-lg text-secondary">
