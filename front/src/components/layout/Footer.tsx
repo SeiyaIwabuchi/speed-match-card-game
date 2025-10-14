@@ -25,7 +25,7 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
       )}
       <div className="footer__copyright">
-        © 2024 SpeedMatch. All rights reserved.
+        © 2025 SpeedMatch. All rights reserved.
       </div>
     </footer>
   );

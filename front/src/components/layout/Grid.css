@@ -1,0 +1,154 @@
+/* Grid System Styles */
+
+.grid {
+  display: grid;
+  grid-template-columns: var(--grid-columns);
+  width: 100%;
+}
+
+/* Gap Variants */
+.grid--gap-xs {
+  gap: var(--spacing-1);
+}
+
+.grid--gap-sm {
+  gap: var(--spacing-2);
+}
+
+.grid--gap-md {
+  gap: var(--spacing-4);
+}
+
+.grid--gap-lg {
+  gap: var(--spacing-6);
+}
+
+.grid--gap-xl {
+  gap: var(--spacing-8);
+}
+
+/* Alignment */
+.grid--align-start {
+  align-items: start;
+}
+
+.grid--align-center {
+  align-items: center;
+}
+
+.grid--align-end {
+  align-items: end;
+}
+
+.grid--align-stretch {
+  align-items: stretch;
+}
+
+/* Justification */
+.grid--justify-start {
+  justify-content: start;
+}
+
+.grid--justify-center {
+  justify-content: center;
+}
+
+.grid--justify-end {
+  justify-content: end;
+}
+
+.grid--justify-space-between {
+  justify-content: space-between;
+}
+
+.grid--justify-space-around {
+  justify-content: space-around;
+}
+
+.grid--justify-space-evenly {
+  justify-content: space-evenly;
+}
+
+/* Grid Item */
+.grid-item {
+  min-width: 0; /* テキストの縮小を可能にする */
+}
+
+/* Responsive Grid Columns */
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: var(--grid-columns-sm, var(--grid-columns));
+  }
+  
+  .grid-item {
+    grid-column: var(--grid-item-sm, auto) !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .grid {
+    grid-template-columns: var(--grid-columns-md, var(--grid-columns));
+  }
+  
+  .grid-item {
+    grid-column: var(--grid-item-md, auto) !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .grid {
+    grid-template-columns: var(--grid-columns-lg, var(--grid-columns));
+  }
+  
+  .grid-item {
+    grid-column: var(--grid-item-lg, auto) !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .grid {
+    grid-template-columns: var(--grid-columns-xl, var(--grid-columns));
+  }
+  
+  .grid-item {
+    grid-column: var(--grid-item-xl, auto) !important;
+  }
+}
+
+/* ユーティリティクラス */
+.grid--1-col { --grid-columns: repeat(1, 1fr); }
+.grid--2-col { --grid-columns: repeat(2, 1fr); }
+.grid--3-col { --grid-columns: repeat(3, 1fr); }
+.grid--4-col { --grid-columns: repeat(4, 1fr); }
+.grid--5-col { --grid-columns: repeat(5, 1fr); }
+.grid--6-col { --grid-columns: repeat(6, 1fr); }
+
+/* カード用レイアウト */
+.grid--cards {
+  --grid-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.grid--cards-sm {
+  --grid-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.grid--cards-lg {
+  --grid-columns: repeat(auto-fit, minmax(350px, 1fr));
+}
+
+/* ルーム一覧用 */
+.grid--rooms {
+  --grid-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+/* プレイエリア用 */
+.grid--game {
+  --grid-columns: 1fr 2fr 1fr;
+  --grid-columns-md: 1fr;
+  --grid-columns-sm: 1fr;
+}
+
+/* 統計情報用 */
+.grid--stats {
+  --grid-columns: repeat(auto-fit, minmax(150px, 1fr));
+}

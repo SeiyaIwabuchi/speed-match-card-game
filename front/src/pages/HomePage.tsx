@@ -1,16 +1,26 @@
 import React from 'react';
 import { Button, Card, CardHeader, CardBody, Container, Header, Footer } from '../components';
 
-const HomePage: React.FC = () => {
+interface HomePageProps {
+  onNavigate?: (page: string) => void;
+  player?: {
+    name: string;
+    avatar?: string;
+    wins?: number;
+    totalGames?: number;
+  } | null;
+}
+
+const HomePage: React.FC<HomePageProps> = ({ onNavigate, player }) => {
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
       <Container size="xl">
-          <Header title="スピードマッチ">
-            <div className="header__user">
-              <div className="header__avatar">P</div>
-              <div className="header__user-name">プレイヤー</div>
-            </div>
-          </Header>
+          <Header 
+            title="スピードマッチ"
+            player={player || undefined}
+            showNavigation={true}
+            onNavigate={onNavigate}
+          />
           
           <main>
             <div className="text-center mb-6">
