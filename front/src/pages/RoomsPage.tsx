@@ -108,8 +108,10 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
   };
 
   const handleCreateRoom = () => {
-    console.log('Creating new room');
-    // TODO: ルーム作成処理
+    console.log('Navigating to create room page');
+    if (onNavigate) {
+      onNavigate('create-room');
+    }
   };
 
   const handleRefresh = async () => {

@@ -1,8 +1,14 @@
 import React, { useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { PlayerProvider, usePlayer } from './contexts';
-import { HomePage, RoomsPage, ProfilePage, GamePage, PlayerRegistrationPage } from './pages';
+import { HashRouter as Router, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { PlayerProvider, usePlayer, RoomProvider } from './contexts';
+import { HomePage, RoomsPage, ProfilePage, GamePage, PlayerRegistrationPage, CreateRoomPage, WaitingRoomPage } from './pages';
 import './App.css';
+
+// WaitingRoomPageのラッパーコンポーネント
+const WaitingRoomPageWrapper: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
+  const { roomId } = useParams<{ roomId: string }>();
+  return <WaitingRoomPage onNavigate={onNavigate} roomId={roomId} />;
+};
 
 // ナビゲーション機能を持つルーターコンポーネント
 const AppRoutes: React.FC = () => {
@@ -31,10 +37,16 @@ const AppRoutes: React.FC = () => {
       case 'register':
         navigate('/register');
         break;
+      case 'create-room':
+        navigate('/create-room');
+        break;
       default:
         if (page.startsWith('game/')) {
           const roomId = page.split('/')[1];
           navigate(`/game/${roomId}`);
+        } else if (page.startsWith('waiting-room/')) {
+          const roomId = page.split('/')[1];
+          navigate(`/waiting-room/${roomId}`);
         }
         break;
     }
@@ -84,6 +96,22 @@ const AppRoutes: React.FC = () => {
         } 
       />
       <Route 
+        path="/create-room" 
+        element={
+          <CreateRoomPage 
+            onNavigate={handleNavigate}
+          />
+        } 
+      />
+      <Route 
+        path="/waiting-room/:roomId" 
+        element={
+          <WaitingRoomPageWrapper 
+            onNavigate={handleNavigate}
+          />
+        } 
+      />
+      <Route 
         path="/game/:roomId" 
         element={
           <GamePage 
@@ -99,9 +127,11 @@ const AppRoutes: React.FC = () => {
 function App() {
   return (
     <PlayerProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <RoomProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </RoomProvider>
     </PlayerProvider>
   );
 }

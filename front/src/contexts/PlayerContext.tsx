@@ -15,7 +15,7 @@ interface PlayerContextType {
   isRegistered: boolean;
 }
 
-const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
+export const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export const usePlayer = () => {
   const context = useContext(PlayerContext);
