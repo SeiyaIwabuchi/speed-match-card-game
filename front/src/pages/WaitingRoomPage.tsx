@@ -31,7 +31,7 @@ interface Room {
 }
 
 const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId }) => {
-  const { player } = useContext(PlayerContext);
+  const { player } = useContext(PlayerContext) || {};
   const [room, setRoom] = useState<Room | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -364,7 +364,7 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
             </div>
 
             {/* 注意事項 */}
-            <Card variant="outline" className="p-4 bg-blue-50 border-blue-200">
+            <Card variant="outlined" className="p-4 bg-blue-50 border-blue-200">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-white text-sm font-bold">i</span>
