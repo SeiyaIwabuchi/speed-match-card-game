@@ -1,79 +1,87 @@
-# Suggested Commands
+# 推奨コマンド集
 
-## Development Commands
+## 開発関連コマンド
 
-### Start Development Server
+### プロジェクト起動
 ```powershell
+# 開発サーバー起動
 npm run dev
-```
-Starts the Vite development server with Hot Module Replacement (HMR). The application will typically be available at `http://localhost:5173`.
 
-### Build for Production
-```powershell
+# プロダクションビルド
 npm run build
-```
-Compiles TypeScript (`tsc -b`) and builds the production bundle with Vite. Output is generated in the `dist/` directory.
 
-### Preview Production Build
-```powershell
+# プロダクションビルド（本番モード）
+npm run build:prod
+
+# ビルド結果のプレビュー
 npm run preview
 ```
-Serves the production build locally for testing before deployment.
 
-### Linting
+### コード品質管理
 ```powershell
+# ESLint実行
 npm run lint
+
+# 自動修正付きESLint
+npm run lint -- --fix
+
+# TypeScript型チェック
+npx tsc --noEmit
 ```
-Runs ESLint on all TypeScript and TSX files to check for code quality issues.
 
-## Package Management
-
-### Install Dependencies
+### システムコマンド（Windows）
 ```powershell
-npm install
+# ディレクトリ作成
+mkdir <directory_name>
+
+# ファイル一覧表示
+ls
+dir
+
+# ディレクトリ移動
+cd <path>
+
+# ファイル内容表示
+Get-Content <file>
+cat <file>
+
+# ファイル検索
+Select-String -Pattern "<pattern>" -Path <file_or_directory>
+
+# Git操作
+git status
+git add .
+git commit -m "message"
+git push
+git pull
 ```
 
-### Add New Dependency
+### 開発ワークフロー
 ```powershell
-npm install <package-name>
+# 新機能開発開始
+git checkout -b feature/<feature_name>
+
+# 変更をステージング
+git add .
+
+# コミット
+git commit -m "feat: <description>"
+
+# リモートにプッシュ
+git push origin feature/<feature_name>
 ```
 
-### Add New Dev Dependency
+### デバッグ・確認
 ```powershell
-npm install -D <package-name>
+# パッケージ情報確認
+npm list
+
+# 依存関係の脆弱性チェック
+npm audit
+
+# キャッシュクリア
+npm cache clean --force
+
+# node_modules再インストール
+rm -rf node_modules package-lock.json; npm install
 ```
-
-## Windows System Utilities
-
-Since this project is on Windows, here are common PowerShell commands:
-
-### File System Navigation
-- `cd <path>` - Change directory
-- `ls` or `dir` - List directory contents
-- `Get-ChildItem -Recurse` - List files recursively
-- `mkdir <name>` - Create directory
-- `Remove-Item <path>` - Delete file or directory
-
-### File Operations
-- `cat <file>` or `Get-Content <file>` - View file contents
-- `echo <text> > <file>` - Write to file
-- `Copy-Item <source> <dest>` - Copy files
-- `Move-Item <source> <dest>` - Move files
-
-### Search
-- `Select-String -Path <file> -Pattern <pattern>` - Search in files (like grep)
-- `Get-ChildItem -Recurse -Filter <pattern>` - Find files by pattern
-
-### Git Commands
-- `git status` - Check repository status
-- `git add .` - Stage all changes
-- `git commit -m "message"` - Commit changes
-- `git push` - Push to remote
-- `git pull` - Pull from remote
-- `git branch` - List branches
-- `git checkout <branch>` - Switch branches
-
-## Notes
-- The project uses `npm` as the package manager
-- Vite provides fast HMR during development
-- All npm scripts are defined in `package.json`
