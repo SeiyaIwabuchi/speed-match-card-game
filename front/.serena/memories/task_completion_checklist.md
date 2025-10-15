@@ -1,76 +1,78 @@
-# Task Completion Checklist
+# タスク完了チェックリスト
 
-When completing a task in this project, follow these steps:
+## コード実装完了時
+### 1. コード品質チェック
+- [ ] ESLintエラーの修正: `npm run lint`
+- [ ] TypeScript型エラーの修正: `npx tsc --noEmit`
+- [ ] コンパイルエラーの確認
 
-## 1. Code Quality Checks
+### 2. 動作確認
+- [ ] 開発サーバーでの動作確認: `npm run dev`
+- [ ] 実装した機能の動作テスト
+- [ ] エラーハンドリングの確認
+- [ ] レスポンシブデザインの確認
 
-### Run Linting
-```powershell
-npm run lint
+### 3. コードレビュー
+- [ ] コーディング規約の遵守確認
+- [ ] 適切なコメント・ドキュメント
+- [ ] 不要なコード・importの削除
+- [ ] console.logの削除（必要に応じて）
+
+### 4. テスト
+- [ ] ユニットテスト実行（存在する場合）
+- [ ] 手動テスト実行
+- [ ] エッジケースの確認
+
+## 機能実装完了時
+### 1. 統合テスト
+- [ ] 他のコンポーネントとの連携確認
+- [ ] データフローの確認
+- [ ] 状態管理の確認
+
+### 2. UX/UI確認
+- [ ] ユーザビリティの確認
+- [ ] アクセシビリティの基本確認
+- [ ] エラーメッセージの適切性
+
+### 3. パフォーマンス
+- [ ] 不要な再レンダリングの確認
+- [ ] メモリリークの確認
+- [ ] ビルドサイズの確認: `npm run build`
+
+## リリース前
+### 1. 最終確認
+- [ ] プロダクションビルドの成功: `npm run build:prod`
+- [ ] ビルド結果の動作確認: `npm run preview`
+- [ ] 全機能の動作確認
+
+### 2. ドキュメント更新
+- [ ] README.mdの更新
+- [ ] 変更ログの記録
+- [ ] 必要に応じて設計書の更新
+
+### 3. Git操作
+- [ ] 適切なコミットメッセージ
+- [ ] 機能ブランチからmainへのマージ
+- [ ] タグ作成（バージョン管理）
+
+## 緊急修正時
+### 1. 迅速対応
+- [ ] 問題の特定と修正
+- [ ] 最小限のテスト実行
+- [ ] 影響範囲の確認
+
+### 2. 事後処理
+- [ ] 根本原因の分析
+- [ ] 予防策の検討
+- [ ] テストケースの追加
+
+## チェックリスト使用例
 ```
-Ensure there are no ESLint errors or warnings. Fix any issues before committing.
-
-### Type Check
-The build command includes TypeScript compilation:
-```powershell
-npm run build
+Task: プレイヤー登録機能の実装
+- [x] ESLintエラーの修正
+- [x] TypeScript型エラーの修正
+- [x] 開発サーバーでの動作確認
+- [x] フォームバリデーションのテスト
+- [ ] レスポンシブデザインの確認
+- [ ] 他のページとの連携確認
 ```
-This will fail if there are TypeScript errors. Ensure all type errors are resolved.
-
-## 2. Testing
-
-### Manual Testing
-```powershell
-npm run dev
-```
-- Start the development server
-- Test the changes in the browser
-- Verify Hot Module Replacement works correctly
-- Check for console errors or warnings
-
-### Production Build Test
-```powershell
-npm run build
-npm run preview
-```
-- Build the production bundle
-- Preview the production build
-- Ensure everything works as expected in production mode
-
-## 3. Code Style Verification
-
-- Ensure code follows TypeScript strict mode requirements
-- Check that no unused variables or parameters exist
-- Verify imports are organized and necessary
-- Confirm component naming follows PascalCase convention
-- Ensure proper use of React Hooks
-
-## 4. File Organization
-
-- New components should be in `src/` directory
-- Static assets in `public/` for public path references
-- React-specific assets in `src/assets/`
-- Styles co-located with components or in dedicated CSS files
-
-## 5. Version Control
-
-Before committing:
-```powershell
-git status
-git add .
-git commit -m "descriptive message"
-```
-
-## 6. Documentation
-
-- Update README.md if adding major features
-- Add comments for complex logic
-- Update type definitions if modifying interfaces
-
-## Common Issues to Check
-
-- **Import paths**: Use correct relative paths for local imports
-- **Public assets**: Reference with `/` prefix (e.g., `/vite.svg`)
-- **React imports**: Modern React doesn't require `import React` for JSX
-- **Unused imports**: ESLint will flag these - remove them
-- **Type safety**: Ensure all TypeScript errors are resolved

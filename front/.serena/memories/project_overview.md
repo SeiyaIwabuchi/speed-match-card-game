@@ -1,42 +1,45 @@
-# Project Overview
+# スピードマッチ - プロジェクト概要
 
-## Project Name
-Speed Match Card Game - Frontend
+## プロジェクトの目的
+スピードマッチは、2〜4人でリアルタイム対戦できるオンラインカードゲームアプリです。
+- ゲームルール: 場に出ているカードより「±1以内の数字」または「同じ数字」のカードを手札から出し、最初に手札を全て出し切った人が勝利
+- 対戦人数: 2〜4人
+- カード: 1〜13の数字カードを使用
+- ゲーム形式: ターン制のリアルタイム対戦
 
-## Purpose
-This is the frontend application for a speed match card game. It's built as a modern React web application using Vite as the build tool and development server.
+## 技術スタック
+### フロントエンド
+- **フレームワーク**: React 19.1.1 + TypeScript
+- **ビルドツール**: Vite 7.1.7
+- **ルーティング**: React Router DOM 6.28.0
+- **開発環境**: Node.js 22.20.0 (Volta管理)
+- **スタイル**: カスタムCSS + CSS Modules
 
-## Tech Stack
-- **Framework**: React 19.1.1
-- **Language**: TypeScript 5.9.3
-- **Build Tool**: Vite 7.1.7
-- **Package Manager**: npm (with package-lock.json)
-- **Linting**: ESLint 9.36.0
-- **React Type Definitions**: @types/react and @types/react-dom
+### 開発ツール
+- **Linter**: ESLint 9.36.0
+- **TypeScript**: 5.9.3
+- **型チェック**: TypeScript + React types
 
-## Project Structure
+## アーキテクチャ
+### プロジェクト構造
 ```
-front/
-├── public/           # Static assets
-│   └── vite.svg
-├── src/             # Source code
-│   ├── assets/      # React assets (images, etc.)
-│   │   └── react.svg
-│   ├── App.tsx      # Main App component
-│   ├── App.css      # App styles
-│   ├── main.tsx     # Application entry point
-│   └── index.css    # Global styles
-├── index.html       # HTML template
-├── package.json     # Dependencies and scripts
-├── vite.config.ts   # Vite configuration
-├── eslint.config.js # ESLint configuration
-├── tsconfig.json    # TypeScript project references
-├── tsconfig.app.json    # TypeScript app configuration
-├── tsconfig.node.json   # TypeScript node configuration
-└── README.md        # Project documentation
+src/
+├── components/          # 再利用可能なUIコンポーネント
+│   ├── layout/         # レイアウト系（Header, Footer, Container等）
+│   └── ui/             # UI部品（Button, Card, Input等）
+├── contexts/           # React Context（PlayerContext）
+├── pages/              # 画面コンポーネント
+└── styles/             # グローバルスタイル
 ```
 
-## Entry Point
-- `index.html` - HTML template with root div
-- `src/main.tsx` - React application bootstrap with StrictMode
-- `src/App.tsx` - Main application component
+### 主要機能
+1. **プレイヤー管理**: 登録・認証・プロフィール管理
+2. **ルーム機能**: 作成・参加・待機
+3. **ゲームプレイ**: リアルタイム対戦
+4. **UI/UX**: レスポンシブデザイン
+
+## 開発状況
+- 基本的なプロジェクト構造とコンポーネントが整備済み
+- PlayerContextによる状態管理が実装済み
+- 各ページの基本レイアウトが完成
+- 実際の機能実装は進行中
