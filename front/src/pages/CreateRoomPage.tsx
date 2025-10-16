@@ -16,7 +16,7 @@ interface RoomSettings {
 }
 
 const CreateRoomPage: React.FC<CreateRoomPageProps> = ({ onNavigate }) => {
-  const { player } = useContext(PlayerContext);
+  const { player } = useContext(PlayerContext) || {};
   const [settings, setSettings] = useState<RoomSettings>({
     name: '',
     maxPlayers: 4,
