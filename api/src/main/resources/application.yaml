@@ -4,3 +4,11 @@ ktor:
             - com.speedmatch.ApplicationKt.module
     deployment:
         port: 8080
+
+# Database configuration
+database:
+    driver: "org.postgresql.Driver"
+    url: "jdbc:postgresql://localhost:5432/speedmatch_dev"
+    user: "speedmatch_user"
+    password: "speedmatch_password"
+    maxPoolSize: 10
