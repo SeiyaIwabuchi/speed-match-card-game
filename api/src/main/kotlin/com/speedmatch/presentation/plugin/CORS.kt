@@ -12,6 +12,10 @@ fun Application.configureCORS() {
         allowHost("localhost:5173") // Vite dev server
         allowHost("127.0.0.1:5173")
         
+        // Allow Swagger UI
+        allowHost("localhost:8080")
+        allowHost("127.0.0.1:8080")
+        
         // Allow common headers
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)

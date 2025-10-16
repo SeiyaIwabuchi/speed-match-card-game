@@ -4,7 +4,7 @@ info:
   description: "スピードマッチ - オンライン対戦型カードゲームAPI"
   version: "0.0.1"
 servers:
-  - url: "http://localhost:8080"
+  - url: "http://127.0.0.1:8080"
     description: "Development server"
 paths:
   /:
@@ -19,4 +19,37 @@ paths:
               schema:
                 type: "string"
                 example: "Hello World!"
+  
+  /health:
+    get:
+      summary: "Health Check"
+      description: "サーバーの稼働状態を確認するヘルスチェックエンドポイント"
+      responses:
+        "200":
+          description: "サーバーが正常に稼働中"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  status:
+                    type: "string"
+                    example: "OK"
+                  timestamp:
+                    type: "string"
+                    format: "date-time"
+                    example: "2025-10-16T14:59:55.459Z"
+  
+  /api/v1/hello:
+    get:
+      summary: "API v1 Hello"
+      description: "API v1のHelloエンドポイント"
+      responses:
+        "200":
+          description: "成功レスポンス"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+                example: "Hello from API v1!"
 

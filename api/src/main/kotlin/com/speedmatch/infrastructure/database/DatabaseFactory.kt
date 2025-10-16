@@ -30,5 +30,19 @@ object DatabaseFactory {
         val dataSource = HikariDataSource(hikariConfig)
         Database.connect(dataSource)
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_REPEATABLE_READ
+        
+        // Create tables if they don't exist
+        SchemaUtils.createTables()
+        
+        // Insert seed data in development environment (safe: ignore duplicates/errors)
+        val environment = config.propertyOrNull("ktor.environment")?.getString() ?: "development"
+        if (environment == "development") {
+            try {
+                SeedData.insertSampleData()
+            } catch (e: Exception) {
+                // Don't fail app startup if seed already exists or insertion fails in development
+                println("SeedData insertion skipped or failed: ${'$'}{e.message}")
+            }
+        }
     }
 }
