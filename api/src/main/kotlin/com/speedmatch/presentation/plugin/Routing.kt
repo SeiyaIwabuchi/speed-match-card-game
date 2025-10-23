@@ -4,6 +4,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import com.speedmatch.presentation.routes.playerRoutes
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -18,7 +19,7 @@ fun Application.configureRouting() {
         get("/") {
             call.respondText("Hello World!")
         }
-        
+
         get("/health") {
             call.respond(
                 HttpStatusCode.OK,
@@ -28,7 +29,11 @@ fun Application.configureRouting() {
                 )
             )
         }
-        
+
+        route("/api") {
+            playerRoutes()
+        }
+
         route("/api/v1") {
             get("/hello") {
                 call.respondText("Hello, SpeedMatch API!")

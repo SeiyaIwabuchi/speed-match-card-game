@@ -5,6 +5,8 @@ import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.timestamp
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.ReferenceOption
 
 /**
@@ -188,78 +190,116 @@ object SeedData {
      */
     fun insertSampleData() {
         transaction {
-            // Sample players
-            val player1 = Players.insert {
-                it[playerId] = "pl_test_001"
-                it[username] = "TestPlayer1"
-                it[avatar] = "👤"
-                it[totalGames] = 5
-                it[totalWins] = 3
-                it[totalLosses] = 2
-                it[totalCardsPlayed] = 25
-                it[createdAt] = java.time.Instant.now()
-                it[updatedAt] = java.time.Instant.now()
-            }
+            try {
+                // Try to insert sample data, skip if already exists
+                try {
+                    Players.insert {
+                        it[playerId] = "pl_test_001"
+                        it[username] = "TestPlayer1"
+                        it[avatar] = "👤"
+                        it[totalGames] = 5
+                        it[totalWins] = 3
+                        it[totalLosses] = 2
+                        it[totalCardsPlayed] = 25
+                        it[createdAt] = java.time.Instant.now()
+                        it[updatedAt] = java.time.Instant.now()
+                    }
+                    println("Sample player 1 inserted")
+                } catch (e: Exception) {
+                    println("Sample player 1 already exists, skipping")
+                }
 
-            val player2 = Players.insert {
-                it[playerId] = "pl_test_002"
-                it[username] = "TestPlayer2"
-                it[avatar] = "🎮"
-                it[totalGames] = 3
-                it[totalWins] = 1
-                it[totalLosses] = 2
-                it[totalCardsPlayed] = 18
-                it[createdAt] = java.time.Instant.now()
-                it[updatedAt] = java.time.Instant.now()
-            }
+                try {
+                    Players.insert {
+                        it[playerId] = "pl_test_002"
+                        it[username] = "TestPlayer2"
+                        it[avatar] = "🎮"
+                        it[totalGames] = 3
+                        it[totalWins] = 1
+                        it[totalLosses] = 2
+                        it[totalCardsPlayed] = 18
+                        it[createdAt] = java.time.Instant.now()
+                        it[updatedAt] = java.time.Instant.now()
+                    }
+                    println("Sample player 2 inserted")
+                } catch (e: Exception) {
+                    println("Sample player 2 already exists, skipping")
+                }
 
-            // Sample room
-            val room = Rooms.insert {
-                it[roomId] = "rm_test_001"
-                it[roomCode] = "ABC123"
-                it[roomName] = "Test Room"
-                it[hostId] = "pl_test_001"
-                it[maxPlayers] = 4
-                it[currentPlayers] = 2
-                it[status] = "waiting"
-                it[createdAt] = java.time.Instant.now()
-                it[updatedAt] = java.time.Instant.now()
-            }
+                try {
+                    Rooms.insert {
+                        it[roomId] = "rm_test_001"
+                        it[roomCode] = "ABC123"
+                        it[roomName] = "Test Room"
+                        it[hostId] = "pl_test_001"
+                        it[maxPlayers] = 4
+                        it[currentPlayers] = 2
+                        it[status] = "waiting"
+                        it[createdAt] = java.time.Instant.now()
+                        it[updatedAt] = java.time.Instant.now()
+                    }
+                    println("Sample room inserted")
+                } catch (e: Exception) {
+                    println("Sample room already exists, skipping")
+                }
 
-            // Room players
-            RoomPlayers.insert {
-                it[roomId] = "rm_test_001"
-                it[playerId] = "pl_test_001"
-                it[isReady] = true
-                it[isHost] = true
-                it[joinOrder] = 1
-                it[joinedAt] = java.time.Instant.now()
-            }
+                try {
+                    RoomPlayers.insert {
+                        it[roomId] = "rm_test_001"
+                        it[playerId] = "pl_test_001"
+                        it[isReady] = true
+                        it[isHost] = true
+                        it[joinOrder] = 1
+                        it[joinedAt] = java.time.Instant.now()
+                    }
+                    println("Sample room player 1 inserted")
+                } catch (e: Exception) {
+                    println("Sample room player 1 already exists, skipping")
+                }
 
-            RoomPlayers.insert {
-                it[roomId] = "rm_test_001"
-                it[playerId] = "pl_test_002"
-                it[isReady] = false
-                it[isHost] = false
-                it[joinOrder] = 2
-                it[joinedAt] = java.time.Instant.now()
-            }
+                try {
+                    RoomPlayers.insert {
+                        it[roomId] = "rm_test_001"
+                        it[playerId] = "pl_test_002"
+                        it[isReady] = false
+                        it[isHost] = false
+                        it[joinOrder] = 2
+                        it[joinedAt] = java.time.Instant.now()
+                    }
+                    println("Sample room player 2 inserted")
+                } catch (e: Exception) {
+                    println("Sample room player 2 already exists, skipping")
+                }
 
-            // Sample chat messages
-            ChatMessages.insert {
-                it[roomId] = "rm_test_001"
-                it[playerId] = "pl_test_001"
-                it[message] = "Hello everyone!"
-                it[messageType] = "text"
-                it[createdAt] = java.time.Instant.now()
-            }
+                try {
+                    ChatMessages.insert {
+                        it[roomId] = "rm_test_001"
+                        it[playerId] = "pl_test_001"
+                        it[message] = "Hello everyone!"
+                        it[messageType] = "text"
+                        it[createdAt] = java.time.Instant.now()
+                    }
+                    println("Sample chat message 1 inserted")
+                } catch (e: Exception) {
+                    println("Sample chat message 1 already exists, skipping")
+                }
 
-            ChatMessages.insert {
-                it[roomId] = "rm_test_001"
-                it[playerId] = "pl_test_002"
-                it[message] = "👋"
-                it[messageType] = "emoji"
-                it[createdAt] = java.time.Instant.now()
+                try {
+                    ChatMessages.insert {
+                        it[roomId] = "rm_test_001"
+                        it[playerId] = "pl_test_002"
+                        it[message] = "👋"
+                        it[messageType] = "emoji"
+                        it[createdAt] = java.time.Instant.now()
+                    }
+                    println("Sample chat message 2 inserted")
+                } catch (e: Exception) {
+                    println("Sample chat message 2 already exists, skipping")
+                }
+
+                println("Sample data insertion completed")
+            } catch (e: Exception) {
+                println("SeedData insertion failed: ${e.message}")
             }
         }
     }
