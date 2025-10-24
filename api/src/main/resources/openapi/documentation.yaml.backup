@@ -1,0 +1,1169 @@
+openapi: "3.1.0"
+info:
+  title: "Speed Match API"
+  description: "スピードマッチ - オンライン対戦型カードゲームAPI"
+  version: "0.0.1"
+servers:
+  - url: "http://127.0.0.1:8080"
+    description: "Development server"
+
+components:
+  schemas:
+    # 共通レスポンススキーマ
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          description: "レスポンスデータ"
+        message:
+          type: string
+          description: "成功メッセージ"
+
+    ApiErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          $ref: "#/components/schemas/ErrorDetails"
+
+    ErrorDetails:
+      type: object
+      properties:
+        code:
+          type: string
+          description: "エラーコード"
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: "エラーメッセージ"
+          example: "バリデーションエラーが発生しました"
+        details:
+          type: object
+          description: "追加のエラー詳細"
+
+    # プレイヤー関連スキーマ
+    PlayerCreateRequest:
+      type: object
+      required:
+        - username
+        - avatar
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 12
+          pattern: "^[a-zA-Z0-9_]+$"
+          description: "ユーザー名（3-12文字、英数字とアンダースコアのみ）"
+          example: "player123"
+        avatar:
+          type: string
+          minLength: 1
+          maxLength: 1
+          description: "アバター（絵文字または英字1文字）"
+          example: "👤"
+
+    PlayerUpdateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 12
+          pattern: "^[a-zA-Z0-9_]+$"
+          description: "ユーザー名（3-12文字、英数字とアンダースコアのみ）"
+          example: "newname"
+        avatar:
+          type: string
+          minLength: 1
+          maxLength: 1
+          description: "アバター（絵文字または英字1文字）"
+          example: "🎮"
+
+    PlayerResponse:
+      type: object
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーID"
+          example: "pl_1234567890"
+        username:
+          type: string
+          description: "ユーザー名"
+          example: "player123"
+        avatar:
+          type: string
+          description: "アバター"
+          example: "👤"
+        stats:
+          $ref: "#/components/schemas/PlayerStats"
+        createdAt:
+          type: string
+          format: date-time
+          description: "作成日時"
+          example: "2025-10-11T10:00:00Z"
+
+    PlayerStats:
+      type: object
+      properties:
+        totalGames:
+          type: integer
+          description: "総プレイ回数"
+          example: 50
+        wins:
+          type: integer
+          description: "勝利数"
+          example: 25
+        losses:
+          type: integer
+          description: "敗北数"
+          example: 25
+        winRate:
+          type: number
+          format: float
+          description: "勝率"
+          example: 0.5
+        fastestWin:
+          type: integer
+          nullable: true
+          description: "最速勝利ターン数"
+          example: 8
+        totalCardsPlayed:
+          type: integer
+          description: "総カードプレイ数"
+          example: 400
+
+    PlayerStatsResponse:
+      type: object
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーID"
+          example: "pl_1234567890"
+        stats:
+          $ref: "#/components/schemas/PlayerStats"
+
+    # ポーリングAPI関連スキーマ（Phase 11）
+    RoomStateResponse:
+      type: object
+      properties:
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        roomCode:
+          type: string
+          description: "6桁のルームコード"
+          example: "ABC123"
+        status:
+          type: string
+          enum: ["waiting", "playing", "finished"]
+          description: "ルームの状態"
+          example: "waiting"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoomPlayerInfo"
+          description: "ルーム内のプレイヤー一覧"
+        updatedAt:
+          type: string
+          format: date-time
+          description: "最終更新時刻"
+          example: "2025-10-11T12:01:30Z"
+
+    RoomPlayerInfo:
+      type: object
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーID"
+          example: "pl_1234567890"
+        username:
+          type: string
+          description: "ユーザー名"
+          example: "player123"
+        avatar:
+          type: string
+          description: "アバター"
+          example: "👤"
+        isReady:
+          type: boolean
+          description: "準備完了状態"
+          example: true
+        isHost:
+          type: boolean
+          description: "ホストかどうか"
+          example: true
+
+    GameStateResponse:
+      type: object
+      properties:
+        gameId:
+          type: string
+          description: "ゲームID"
+          example: "gm_xyz789"
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        status:
+          type: string
+          enum: ["playing", "finished"]
+          description: "ゲームの状態"
+          example: "playing"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/GamePlayerInfo"
+          description: "ゲーム内のプレイヤー一覧"
+        fieldCards:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardInfo"
+          description: "場に出ているカード"
+        updatedAt:
+          type: string
+          format: date-time
+          description: "最終更新時刻"
+          example: "2025-10-11T12:16:00Z"
+
+    GamePlayerInfo:
+      type: object
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーID"
+          example: "pl_1234567890"
+        username:
+          type: string
+          description: "ユーザー名"
+          example: "player123"
+        avatar:
+          type: string
+          description: "アバター"
+          example: "👤"
+        handSize:
+          type: integer
+          description: "手札の枚数"
+          example: 4
+        isCurrentTurn:
+          type: boolean
+          description: "現在のターンかどうか"
+          example: false
+
+    # ルーム関連スキーマ
+    RoomCreateRequest:
+      type: object
+      properties:
+        roomName:
+          type: string
+          maxLength: 50
+          description: "ルーム名（オプション）"
+          example: "楽しいゲーム部屋"
+        maxPlayers:
+          type: integer
+          minimum: 2
+          maximum: 4
+          default: 4
+          description: "最大プレイヤー数"
+          example: 4
+        initialHandSize:
+          type: integer
+          minimum: 5
+          maximum: 10
+          default: 7
+          description: "初期手札枚数"
+          example: 7
+        turnTimeLimit:
+          type: integer
+          minimum: 30
+          maximum: 300
+          default: 60
+          description: "ターン時間制限（秒）"
+          example: 60
+        isPublic:
+          type: boolean
+          default: true
+          description: "公開ルームかどうか"
+          example: true
+
+    RoomJoinRequest:
+      type: object
+      required:
+        - playerId
+      properties:
+        playerId:
+          type: string
+          description: "参加するプレイヤーのID"
+          example: "pl_1234567890"
+
+    RoomLeaveRequest:
+      type: object
+      required:
+        - playerId
+      properties:
+        playerId:
+          type: string
+          description: "退出するプレイヤーのID"
+          example: "pl_1234567890"
+
+    RoomReadyRequest:
+      type: object
+      required:
+        - playerId
+        - isReady
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーのID"
+          example: "pl_1234567890"
+        isReady:
+          type: boolean
+          description: "準備完了状態"
+          example: true
+
+    RoomStartRequest:
+      type: object
+      required:
+        - hostId
+      properties:
+        hostId:
+          type: string
+          description: "ホストのプレイヤーID"
+          example: "pl_1234567890"
+
+    RoomResponse:
+      type: object
+      properties:
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        roomCode:
+          type: string
+          description: "6桁のルームコード"
+          example: "ABC123"
+        roomName:
+          type: string
+          nullable: true
+          description: "ルーム名"
+          example: "楽しいゲーム部屋"
+        hostId:
+          type: string
+          description: "ホストのプレイヤーID"
+          example: "pl_1234567890"
+        maxPlayers:
+          type: integer
+          description: "最大プレイヤー数"
+          example: 4
+        currentPlayers:
+          type: integer
+          description: "現在のプレイヤー数"
+          example: 2
+        initialHandSize:
+          type: integer
+          description: "初期手札枚数"
+          example: 7
+        turnTimeLimit:
+          type: integer
+          description: "ターン時間制限（秒）"
+          example: 60
+        isPublic:
+          type: boolean
+          description: "公開ルームかどうか"
+          example: true
+        status:
+          type: string
+          enum: ["waiting", "playing", "finished"]
+          description: "ルームの状態"
+          example: "waiting"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoomPlayerInfo"
+          description: "ルーム内のプレイヤー一覧"
+        createdAt:
+          type: string
+          format: date-time
+          description: "作成日時"
+          example: "2025-10-11T10:00:00Z"
+
+    RoomListItem:
+      type: object
+      properties:
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        roomCode:
+          type: string
+          description: "6桁のルームコード"
+          example: "ABC123"
+        roomName:
+          type: string
+          nullable: true
+          description: "ルーム名"
+          example: "楽しいゲーム部屋"
+        hostUsername:
+          type: string
+          description: "ホストのユーザー名"
+          example: "hostplayer"
+        currentPlayers:
+          type: integer
+          description: "現在のプレイヤー数"
+          example: 2
+        maxPlayers:
+          type: integer
+          description: "最大プレイヤー数"
+          example: 4
+        initialHandSize:
+          type: integer
+          description: "初期手札枚数"
+          example: 7
+        turnTimeLimit:
+          type: integer
+          description: "ターン時間制限（秒）"
+          example: 60
+        status:
+          type: string
+          enum: ["waiting", "playing", "finished"]
+          description: "ルームの状態"
+          example: "waiting"
+        createdAt:
+          type: string
+          format: date-time
+          description: "作成日時"
+          example: "2025-10-11T10:00:00Z"
+
+    RoomListResponse:
+      type: object
+      properties:
+        rooms:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoomListItem"
+          description: "ルーム一覧"
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+
+    RoomCodeResponse:
+      type: object
+      properties:
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        roomCode:
+          type: string
+          description: "6桁のルームコード"
+          example: "ABC123"
+        roomName:
+          type: string
+          nullable: true
+          description: "ルーム名"
+          example: "楽しいゲーム部屋"
+        currentPlayers:
+          type: integer
+          description: "現在のプレイヤー数"
+          example: 2
+        maxPlayers:
+          type: integer
+          description: "最大プレイヤー数"
+          example: 4
+        status:
+          type: string
+          enum: ["waiting", "playing", "finished"]
+          description: "ルームの状態"
+          example: "waiting"
+
+    RoomJoinResponse:
+      type: object
+      properties:
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        playerId:
+          type: string
+          description: "参加したプレイヤーのID"
+          example: "pl_1234567890"
+        joinedAt:
+          type: string
+          format: date-time
+          description: "参加日時"
+          example: "2025-10-11T10:05:00Z"
+
+    RoomLeaveResponse:
+      type: object
+      properties:
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        playerId:
+          type: string
+          description: "退出したプレイヤーのID"
+          example: "pl_1234567890"
+        leftAt:
+          type: string
+          format: date-time
+          description: "退出日時"
+          example: "2025-10-11T10:10:00Z"
+
+    RoomReadyResponse:
+      type: object
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーのID"
+          example: "pl_1234567890"
+        isReady:
+          type: boolean
+          description: "準備完了状態"
+          example: true
+
+    RoomStartResponse:
+      type: object
+      properties:
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        gameId:
+          type: string
+          description: "作成されたゲームID"
+          example: "gm_xyz789"
+        status:
+          type: string
+          enum: ["playing"]
+          description: "ゲームの状態"
+          example: "playing"
+        startedAt:
+          type: string
+          format: date-time
+          description: "ゲーム開始日時"
+          example: "2025-10-11T10:15:00Z"
+
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: "現在のページ番号"
+          example: 1
+        limit:
+          type: integer
+          description: "1ページあたりの件数"
+          example: 20
+        total:
+          type: integer
+          description: "総件数"
+          example: 45
+        totalPages:
+          type: integer
+          description: "総ページ数"
+          example: 3
+
+paths:
+  /:
+    get:
+      summary: "Hello World"
+      description: "シンプルなHello Worldエンドポイント"
+      responses:
+        "200":
+          description: "成功レスポンス"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+                example: "Hello World!"
+
+  /health:
+    get:
+      summary: "Health Check"
+      description: "サーバーの稼働状態を確認するヘルスチェックエンドポイント"
+      responses:
+        "200":
+          description: "サーバーが正常に稼働中"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  status:
+                    type: "string"
+                    example: "OK"
+                  timestamp:
+                    type: "string"
+                    format: "date-time"
+                    example: "2025-10-16T14:59:55.459Z"
+
+  /api/v1/hello:
+    get:
+      summary: "API v1 Hello"
+      description: "API v1のHelloエンドポイント"
+      responses:
+        "200":
+          description: "成功レスポンス"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+                example: "Hello from API v1!"
+
+  # プレイヤー管理API
+  /api/players:
+    post:
+      summary: "プレイヤー登録"
+      description: "新規プレイヤーを登録します"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerCreateRequest"
+      responses:
+        "201":
+          description: "プレイヤーが正常に作成されました"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PlayerResponse"
+        "400":
+          description: "バリデーションエラー"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: "ユーザー名が既に存在します"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  /api/players/{playerId}:
+    parameters:
+      - name: playerId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "プレイヤーID"
+        example: "pl_1234567890"
+
+    get:
+      summary: "プレイヤー情報取得"
+      description: "指定されたプレイヤーの情報を取得します"
+      responses:
+        "200":
+          description: "プレイヤー情報"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PlayerResponse"
+        "404":
+          description: "プレイヤーが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+    put:
+      summary: "プレイヤー情報更新"
+      description: "指定されたプレイヤーの情報を更新します"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerUpdateRequest"
+      responses:
+        "200":
+          description: "プレイヤー情報が正常に更新されました"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PlayerResponse"
+        "400":
+          description: "バリデーションエラー"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: "プレイヤーが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: "ユーザー名が既に存在します"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  /api/players/{playerId}/stats:
+    parameters:
+      - name: playerId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "プレイヤーID"
+        example: "pl_1234567890"
+
+    get:
+      summary: "プレイヤー統計取得"
+      description: "指定されたプレイヤーの詳細統計を取得します"
+      responses:
+        "200":
+          description: "プレイヤー統計情報"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PlayerStatsResponse"
+        "404":
+          description: "プレイヤーが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  # ポーリングAPI（Phase 11）
+  /api/rooms/code/{roomCode}/state:
+    parameters:
+      - name: roomCode
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: "^[A-Z0-9]+$"
+        description: "6桁のルームコード"
+        example: "ABC123"
+
+    get:
+      summary: "ルーム状態取得（ポーリング用）"
+      description: "ルームの現在の状態を取得します。If-Modified-Sinceヘッダーを使用して効率的なポーリングを実現します。"
+      parameters:
+        - name: If-Modified-Since
+          in: header
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: "前回取得時のLast-Modified値"
+      responses:
+        "200":
+          description: "ルーム状態情報"
+          headers:
+            Last-Modified:
+              description: "ルームの最終更新時刻"
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RoomStateResponse"
+        "304":
+          description: "変更なし（Not Modified）"
+        "404":
+          description: "ルームが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  /api/games/{gameId}/state:
+    parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ゲームID"
+        example: "gm_xyz789"
+
+    get:
+      summary: "ゲーム状態取得（ポーリング用）"
+      description: "ゲームの現在の状態を取得します。If-Modified-Sinceヘッダーを使用して効率的なポーリングを実現します。"
+      parameters:
+        - name: If-Modified-Since
+          in: header
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: "前回取得時のLast-Modified値"
+      responses:
+        "200":
+          description: "ゲーム状態情報"
+          headers:
+            Last-Modified:
+              description: "ゲームの最終更新時刻"
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/GameStateResponse"
+        "304":
+          description: "変更なし（Not Modified）"
+        "404":
+          description: "ゲームが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  # ルーム管理API
+  /api/rooms:
+    post:
+      summary: "ルーム作成"
+      description: "新しいゲームルームを作成します"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomCreateRequest"
+      responses:
+        "201":
+          description: "ルームが正常に作成されました"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RoomResponse"
+        "400":
+          description: "バリデーションエラー"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+    get:
+      summary: "ルーム一覧取得"
+      description: "公開ルームの一覧を取得します"
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["waiting", "playing", "finished"]
+          description: "ルームの状態でフィルタリング"
+        - name: maxPlayers
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2
+            maximum: 4
+          description: "最大プレイヤー数でフィルタリング"
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: "ページ番号"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: "1ページあたりの件数"
+      responses:
+        "200":
+          description: "ルーム一覧"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RoomListResponse"
+
+  /api/rooms/{roomId}:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ルームID"
+        example: "rm_abc123"
+
+    get:
+      summary: "ルーム詳細取得"
+      description: "指定されたルームの詳細情報を取得します"
+      responses:
+        "200":
+          description: "ルーム詳細情報"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RoomResponse"
+        "404":
+          description: "ルームが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+    post:
+      summary: "ルーム参加"
+      description: "指定されたルームに参加します"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomJoinRequest"
+      responses:
+        "200":
+          description: "ルームに参加しました"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RoomJoinResponse"
+        "400":
+          description: "バリデーションエラーまたはルームが満員"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: "ルームまたはプレイヤーが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  /api/rooms/{roomId}/leave:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ルームID"
+        example: "rm_abc123"
+
+    post:
+      summary: "ルーム退出"
+      description: "指定されたルームから退出します"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomLeaveRequest"
+      responses:
+        "200":
+          description: "ルームから退出しました"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RoomLeaveResponse"
+        "400":
+          description: "バリデーションエラー"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: "ルームが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  /api/rooms/{roomId}/ready:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ルームID"
+        example: "rm_abc123"
+
+    post:
+      summary: "準備完了設定"
+      description: "プレイヤーの準備完了状態を設定します"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomReadyRequest"
+      responses:
+        "200":
+          description: "準備状態が更新されました"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RoomReadyResponse"
+        "400":
+          description: "バリデーションエラー"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: "ルームが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  /api/rooms/{roomId}/start:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ルームID"
+        example: "rm_abc123"
+
+    post:
+      summary: "ゲーム開始"
+      description: "ルーム内のゲームを開始します（ホストのみ）"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomStartRequest"
+      responses:
+        "200":
+          description: "ゲームを開始しました"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RoomStartResponse"
+        "400":
+          description: "バリデーションエラーまたは開始条件を満たしていない"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: "ルームが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  /api/rooms/code/{roomCode}:
+    parameters:
+      - name: roomCode
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: "^[A-Z0-9]+$"
+        description: "6桁のルームコード"
+        example: "ABC123"
+
+    get:
+      summary: "ルームコードでルーム取得"
+      description: "ルームコードを使用してルーム情報を取得します"
+      responses:
+        "200":
+          description: "ルーム情報"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RoomCodeResponse"
+        "404":
+          description: "ルームコードが無効です"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"

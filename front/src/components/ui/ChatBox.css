@@ -1,0 +1,232 @@
+/* ChatBox Component Styles */
+
+.chat-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  height: 100%;
+}
+
+/* メッセージ一覧エリア */
+.chat-box__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-4);
+  background: var(--color-background);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  scroll-behavior: smooth;
+}
+
+.chat-box__messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-box__messages::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.chat-box__messages::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: var(--radius-sm);
+}
+
+.chat-box__messages::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+/* 空の状態 */
+.chat-box__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: var(--spacing-8);
+}
+
+.chat-box__empty-text {
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  margin-bottom: var(--spacing-2);
+}
+
+.chat-box__empty-hint {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-sm);
+}
+
+/* メッセージ */
+.chat-box__message {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+  animation: messageSlideIn 0.2s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-box__message--own {
+  flex-direction: row-reverse;
+}
+
+.chat-box__message--other {
+  flex-direction: row;
+}
+
+/* アバター */
+.chat-box__message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-100);
+  color: var(--color-primary-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-bold);
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+/* メッセージコンテンツ */
+.chat-box__message-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  max-width: 70%;
+}
+
+.chat-box__message--own .chat-box__message-content {
+  align-items: flex-end;
+}
+
+.chat-box__message--other .chat-box__message-content {
+  align-items: flex-start;
+}
+
+/* 送信者名 */
+.chat-box__message-sender {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-medium);
+  padding: 0 var(--spacing-2);
+}
+
+/* メッセージバブル */
+.chat-box__message-bubble {
+  padding: var(--spacing-2-5) var(--spacing-3);
+  border-radius: var(--radius-lg);
+  word-wrap: break-word;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-shadow);
+}
+
+.chat-box__message-bubble:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.chat-box__message-bubble--own {
+  background: var(--color-primary-500);
+  color: white;
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.chat-box__message-bubble--other {
+  background: var(--color-gray-100);
+  color: var(--color-text-primary);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.chat-box__message-text {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-box__message-time {
+  display: block;
+  font-size: var(--text-xs);
+  margin-top: var(--spacing-1);
+  opacity: 0.7;
+}
+
+.chat-box__message-bubble--own .chat-box__message-time {
+  text-align: right;
+}
+
+/* エラー表示 */
+.chat-box__error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  background: var(--color-error-50);
+  border: 1px solid var(--color-error-200);
+  border-radius: var(--radius-md);
+  color: var(--color-error-700);
+  font-size: var(--text-sm);
+}
+
+.chat-box__error-icon {
+  font-size: var(--text-lg);
+}
+
+/* 入力コンテナ */
+.chat-box__input-container {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.chat-box__input {
+  flex: 1;
+}
+
+.chat-box__send-button {
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+/* メッセージカウンター */
+.chat-box__counter {
+  text-align: right;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  padding: 0 var(--spacing-2);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .chat-box__message-content {
+    max-width: 85%;
+  }
+
+  .chat-box__message-bubble {
+    padding: var(--spacing-2) var(--spacing-2-5);
+  }
+
+  .chat-box__input-container {
+    gap: var(--spacing-1-5);
+  }
+
+  .chat-box__send-button {
+    min-width: 60px;
+    font-size: var(--text-sm);
+  }
+}

@@ -2,8 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 export interface Player {
+  id?: string;
   name: string;
   avatar?: string;
+  token?: string;
   wins?: number;
   totalGames?: number;
 }

@@ -1,72 +1,157 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Container, Header, Footer, Card, Button, Grid, GridItem } from '../components';
+import { Container, Header, Footer, Card, Button, Grid, GridItem, ChatBox } from '../components';
 import { PlayerContext } from '../contexts';
+import { useApiError } from '../hooks/useApiError';
+import { getRoom, getRoomByCode, leaveRoom, setReady, startGame, sendChatMessage, getChatMessages } from '../api/room';
+import type { ChatMessage } from '../api/chat';
 
 interface WaitingRoomPageProps {
   onNavigate?: (path: string) => void;
-  roomId?: string;
+  roomCode?: string;
 }
 
 interface Participant {
-  id: string;
-  name: string;
+  playerId: string;
+  username: string;
   avatar: string;
   isReady: boolean;
   isHost: boolean;
 }
 
 interface Room {
-  id: string;
-  name: string;
-  players: number;
+  roomId: string;
+  roomCode: string;
+  roomName: string | null;
+  hostId: string;
   maxPlayers: number;
-  status: 'waiting' | 'in-progress' | 'finished';
+  currentPlayers: number;
+  initialHandSize: number;
+  turnTimeLimit: number;
   isPublic: boolean;
-  cardCount: number;
-  timeLimit: number;
-  description: string;
-  createdBy: string;
+  status: string;
+  players: Participant[];
   createdAt: string;
-  participants: Participant[];
 }
 
-const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId }) => {
+const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode }) => {
   const { player } = useContext(PlayerContext) || {};
+  const { handleApiCall } = useApiError();
   const [room, setRoom] = useState<Room | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
+  const [useMockData, setUseMockData] = useState(false);
+  
+  // チャット機能
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [chatPollingInterval, setChatPollingInterval] = useState<number | null>(null);
+
+  // チャットメッセージを読み込む
+  const loadChatMessages = async () => {
+    if (!room) return;
+
+    try {
+      const response = await getChatMessages(room.roomId, 50);
+      // ChatMessageResponse から ChatMessage に変換
+      const messages: ChatMessage[] = response.messages.map(msg => ({
+        id: msg.messageId,
+        roomId: msg.roomId,
+        playerId: msg.playerId,
+        playerName: msg.username,
+        playerAvatar: msg.avatar,
+        message: msg.message,
+        createdAt: msg.createdAt
+      }));
+      setChatMessages(messages);
+      setChatError(null);
+    } catch (error) {
+      console.error('Failed to load chat messages:', error);
+      setChatError('メッセージの読み込みに失敗しました');
+    }
+  };
+
+  // チャットメッセージのポーリング
+  useEffect(() => {
+    if (room) {
+      loadChatMessages();
+      
+      // 3秒ごとにチャットメッセージを取得
+      const interval = setInterval(() => {
+        loadChatMessages();
+      }, 3000);
+      setChatPollingInterval(interval);
+    }
+
+    return () => {
+      if (chatPollingInterval) {
+        clearInterval(chatPollingInterval);
+      }
+    };
+  }, [room]);
 
   useEffect(() => {
-    loadRoomData();
-  }, [roomId]);
+    if (roomCode) {
+      loadRoomData();
+      // ルーム情報を定期的に更新（ポーリング）
+      const interval = setInterval(() => {
+        loadRoomData();
+      }, 3000); // 3秒ごとに更新
+      setPollingInterval(interval);
+    }
 
-  const loadRoomData = () => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [roomCode]);
+
+  const loadRoomData = async () => {
+    if (!roomCode || !player) return;
+
     try {
-      // LocalStorageからルーム情報を取得
-      const currentRoom = localStorage.getItem('currentRoom');
-      if (currentRoom) {
-        const roomData = JSON.parse(currentRoom);
-        setRoom(roomData);
-        
-        // 現在のプレイヤーの準備状態を確認
-        const currentParticipant = roomData.participants.find((p: Participant) => p.id === player?.name);
-        if (currentParticipant) {
-          setIsReady(currentParticipant.isReady);
-        }
-      } else {
-        // roomIdが指定されている場合は、保存されたルーム一覧から検索
-        if (roomId) {
-          const rooms = JSON.parse(localStorage.getItem('rooms') || '[]');
-          const foundRoom = rooms.find((r: Room) => r.id === roomId);
-          if (foundRoom) {
-            setRoom(foundRoom);
-            localStorage.setItem('currentRoom', JSON.stringify(foundRoom));
-          }
-        }
+      // まずroomCodeからroomIdを取得
+      const roomCodeResponse = await getRoomByCode(roomCode);
+      const roomId = roomCodeResponse.roomId;
+      
+      // roomIdで詳細情報を取得
+      const roomData = await getRoom(roomId);
+      setRoom(roomData);
+      
+      // 現在のプレイヤーの準備状態を確認
+      const currentParticipant = roomData.players.find((p: Participant) => p.playerId === player.name);
+      if (currentParticipant) {
+        setIsReady(currentParticipant.isReady);
       }
     } catch (error) {
       console.error('Failed to load room data:', error);
+      // エラー時はモックデータを使用（初回のみ）
+      if (!useMockData) {
+        const mockRoom: Room = {
+          roomId: 'mock-room-id',
+          roomCode: roomCode,
+          roomName: 'TestRoom',
+          hostId: player.name,
+          maxPlayers: 4,
+          currentPlayers: 1,
+          initialHandSize: 7,
+          turnTimeLimit: 30,
+          isPublic: true,
+          status: 'waiting',
+          players: [{
+            playerId: player.name,
+            username: player.name,
+            avatar: player.avatar || '?',
+            isReady: false,
+            isHost: true
+          }],
+          createdAt: new Date().toISOString()
+        };
+        setRoom(mockRoom);
+        setUseMockData(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -76,14 +161,14 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
     if (!room) return;
 
     try {
-      await navigator.clipboard.writeText(room.id);
+      await navigator.clipboard.writeText(room.roomCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy room code:', error);
       // フォールバック: テキストを選択状態にする
       const textArea = document.createElement('textarea');
-      textArea.value = room.id;
+      textArea.value = room.roomCode;
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand('copy');
@@ -93,69 +178,107 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
     }
   };
 
-  const handleToggleReady = () => {
+  const handleToggleReady = async () => {
     if (!room || !player) return;
 
     const newReadyStatus = !isReady;
     setIsReady(newReadyStatus);
 
-    // ルーム情報を更新
-    const updatedRoom = {
-      ...room,
-      participants: room.participants.map(p => 
-        p.id === player.name 
-          ? { ...p, isReady: newReadyStatus }
-          : p
-      )
-    };
-
-    setRoom(updatedRoom);
-    localStorage.setItem('currentRoom', JSON.stringify(updatedRoom));
-
-    // 全ての参加者を更新（実際の実装ではWebSocketやAPIで同期）
-    updateRoomInStorage(updatedRoom);
-  };
-
-  const updateRoomInStorage = (updatedRoom: Room) => {
     try {
-      const rooms = JSON.parse(localStorage.getItem('rooms') || '[]');
-      const updatedRooms = rooms.map((r: Room) => 
-        r.id === updatedRoom.id ? updatedRoom : r
+      await handleApiCall(
+        () => setReady(room.roomId, { playerId: player.name, isReady: newReadyStatus }),
+        (result) => {
+          console.log('Ready status updated:', result);
+          // ルーム情報を再取得して同期
+          loadRoomData();
+        },
+        (error) => {
+          console.error('Failed to update ready status:', error);
+          // エラーの場合は状態を元に戻す
+          setIsReady(!newReadyStatus);
+        }
       );
-      localStorage.setItem('rooms', JSON.stringify(updatedRooms));
     } catch (error) {
-      console.error('Failed to update room in storage:', error);
+      console.error('Failed to update ready status:', error);
+      setIsReady(!newReadyStatus);
     }
   };
 
-  const handleLeaveRoom = () => {
+  const handleLeaveRoom = async () => {
+    if (!room || !player) return;
+
     if (confirm('本当にルームから退出しますか？')) {
-      // ルーム情報をクリア
-      localStorage.removeItem('currentRoom');
-      
-      if (onNavigate) {
-        onNavigate('rooms');
+      try {
+        await handleApiCall(
+          () => leaveRoom(room.roomId, { playerId: player.name }),
+          (result) => {
+            console.log('Left room:', result);
+            if (onNavigate) {
+              onNavigate('rooms');
+            }
+          },
+          (error) => {
+            console.error('Failed to leave room:', error);
+            alert(`ルームからの退出に失敗しました: ${error.message}`);
+          }
+        );
+      } catch (error) {
+        console.error('Failed to leave room:', error);
       }
     }
   };
 
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
     if (!room) return;
 
-    const allReady = room.participants.every(p => p.isReady || p.isHost);
+    const allReady = room.players.every(p => p.isReady || p.isHost);
     if (!allReady) {
       alert('全員の準備が完了してからゲームを開始してください。');
       return;
     }
 
-    // ゲーム画面に遷移
-    if (onNavigate) {
-      onNavigate(`game/${room.id}`);
+    try {
+      await handleApiCall(
+        () => startGame(room.roomId, { hostId: player!.name }),
+        (result) => {
+          console.log('Game started:', result);
+          // ゲーム画面に遷移
+          if (onNavigate) {
+            onNavigate(`game/${result.gameId}`);
+          }
+        },
+        (error) => {
+          console.error('Failed to start game:', error);
+          alert(`ゲームの開始に失敗しました: ${error.message}`);
+        }
+      );
+    } catch (error) {
+      console.error('Failed to start game:', error);
     }
   };
 
-  const isHost = room?.participants.find(p => p.id === player?.name)?.isHost || false;
-  const allReady = room?.participants.every(p => p.isReady || p.isHost) || false;
+  // チャットメッセージ送信
+  const handleSendMessage = async (message: string): Promise<void> => {
+    if (!player || !room || !player.id) return;
+
+    try {
+      await sendChatMessage(room.roomId, {
+        playerId: player.id,
+        message,
+        type: 'text'
+      });
+
+      // 送信後すぐにメッセージを再取得
+      await loadChatMessages();
+      setChatError(null);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setChatError('メッセージの送信に失敗しました');
+    }
+  };
+
+  const isHost = room?.players.find(p => p.playerId === player?.name)?.isHost || false;
+  const allReady = room?.players.every(p => p.isReady || p.isHost) || false;
 
   if (isLoading) {
     return (
@@ -195,7 +318,7 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
       <Container size="xl" variant="gradient">
         <Header>
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-white">{room.name}</h1>
+            <h1 className="text-2xl font-bold text-white">{room.roomName || 'ルーム'}</h1>
             {player && (
               <div className="flex items-center gap-3 text-white">
                 <div className="flex items-center gap-2">
@@ -224,7 +347,7 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
                   <h3 className="text-lg font-bold mb-3">ルームコード</h3>
                   <div className="flex items-center gap-3">
                     <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg px-4 py-3 font-mono text-2xl font-bold text-center">
-                      {room.id}
+                      {room.roomCode}
                     </div>
                     <Button
                       variant="secondary"
@@ -249,11 +372,11 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">手札枚数:</span>
-                      <span className="font-medium">{room.cardCount}枚</span>
+                      <span className="font-medium">{room.initialHandSize}枚</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">制限時間:</span>
-                      <span className="font-medium">{room.timeLimit}秒</span>
+                      <span className="font-medium">{room.turnTimeLimit}秒</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">公開設定:</span>
@@ -264,20 +387,13 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
                   </div>
                 </div>
               </div>
-
-              {room.description && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="text-lg font-bold mb-2">ルーム説明</h3>
-                  <p className="text-gray-700">{room.description}</p>
-                </div>
-              )}
             </Card>
 
             {/* 参加者一覧 */}
             <Card variant="elevated" className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold">
-                  参加者 ({room.participants.length}/{room.maxPlayers})
+                  参加者 ({room.players.length}/{room.maxPlayers})
                 </h3>
                 <div className="text-sm text-gray-600">
                   {allReady ? '全員準備完了！' : '準備待ち...'}
@@ -285,15 +401,15 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
               </div>
 
               <Grid className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" gap="md">
-                {room.participants.map((participant) => (
-                  <GridItem key={participant.id}>
+                {room.players.map((participant) => (
+                  <GridItem key={participant.playerId}>
                     <div className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50">
                       <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-lg font-bold text-primary">
                         {participant.avatar}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{participant.name}</span>
+                          <span className="font-medium">{participant.username}</span>
                           {participant.isHost && (
                             <span className="bg-yellow-400 text-black px-1.5 py-0.5 rounded text-xs font-bold">
                               ホスト
@@ -313,7 +429,7 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
                 ))}
 
                 {/* 空きスロット */}
-                {Array.from({ length: room.maxPlayers - room.participants.length }).map((_, index) => (
+                {Array.from({ length: room.maxPlayers - room.players.length }).map((_, index) => (
                   <GridItem key={`empty-${index}`}>
                     <div className="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
                       <div className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
@@ -326,6 +442,18 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
                   </GridItem>
                 ))}
               </Grid>
+            </Card>
+
+            {/* チャット */}
+            <Card variant="elevated" className="p-6">
+              <h3 className="text-lg font-bold mb-4">チャット</h3>
+              <ChatBox
+                messages={chatMessages}
+                currentPlayerId={player?.name || ''}
+                onSendMessage={handleSendMessage}
+                error={chatError}
+                maxHeight="300px"
+              />
             </Card>
 
             {/* アクションボタン */}
@@ -353,11 +481,11 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomId })
                   variant="primary"
                   size="lg"
                   onClick={handleStartGame}
-                  disabled={!allReady || room.participants.length < 2}
+                  disabled={!allReady || room.players.length < 2}
                   className="flex-1"
                 >
                   {!allReady ? '準備待ち...' : 
-                   room.participants.length < 2 ? '参加者が不足' : 
+                   room.players.length < 2 ? '参加者が不足' : 
                    'ゲーム開始'}
                 </Button>
               )}

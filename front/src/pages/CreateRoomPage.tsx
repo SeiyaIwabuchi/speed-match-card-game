@@ -1,6 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { Container, Header, Footer, Card, Button, Input } from '../components';
 import { PlayerContext } from '../contexts';
+import { createRoom } from '../api/room';
+import { useApiError } from '../hooks/useApiError';
 
 interface CreateRoomPageProps {
   onNavigate?: (path: string) => void;
@@ -17,6 +19,7 @@ interface RoomSettings {
 
 const CreateRoomPage: React.FC<CreateRoomPageProps> = ({ onNavigate }) => {
   const { player } = useContext(PlayerContext) || {};
+  const { handleApiCall } = useApiError();
   const [settings, setSettings] = useState<RoomSettings>({
     name: '',
     maxPlayers: 4,
@@ -28,42 +31,37 @@ const CreateRoomPage: React.FC<CreateRoomPageProps> = ({ onNavigate }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const validateForm = (): boolean => {
+  const validateSettings = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!settings.name.trim()) {
       newErrors.name = 'ルーム名を入力してください';
-    } else if (settings.name.length > 30) {
-      newErrors.name = 'ルーム名は30文字以内で入力してください';
+    } else if (settings.name.length > 50) {
+      newErrors.name = 'ルーム名は50文字以内で入力してください';
     }
 
-    if (settings.maxPlayers < 2 || settings.maxPlayers > 8) {
-      newErrors.maxPlayers = '参加人数は2-8人で設定してください';
+    if (settings.maxPlayers < 2 || settings.maxPlayers > 4) {
+      newErrors.maxPlayers = 'プレイヤー数は2〜4人で設定してください';
     }
 
     if (settings.cardCount < 5 || settings.cardCount > 13) {
-      newErrors.cardCount = '手札枚数は5-13枚で設定してください';
+      newErrors.cardCount = 'カード枚数は5〜13枚で設定してください';
     }
 
-    if (settings.timeLimit < 10 || settings.timeLimit > 120) {
-      newErrors.timeLimit = '制限時間は10-120秒で設定してください';
+    if (settings.timeLimit < 10 || settings.timeLimit > 60) {
+      newErrors.timeLimit = '制限時間は10〜60秒で設定してください';
     }
 
-    if (settings.description.length > 100) {
-      newErrors.description = '説明は100文字以内で入力してください';
+    if (settings.description && settings.description.length > 200) {
+      newErrors.description = '説明は200文字以内で入力してください';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const generateRoomCode = (): string => {
-    // 6桁のランダムな数字コードを生成
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
-
   const handleCreateRoom = async () => {
-    if (!validateForm()) {
+    if (!validateSettings()) {
       return;
     }
 
@@ -75,50 +73,26 @@ const CreateRoomPage: React.FC<CreateRoomPageProps> = ({ onNavigate }) => {
     setIsCreating(true);
 
     try {
-      // ルームコード生成
-      const roomCode = generateRoomCode();
-      
-      // 新しいルーム情報
-      const newRoom = {
-        id: roomCode,
-        name: settings.name,
-        players: 1,
-        maxPlayers: settings.maxPlayers,
-        status: 'waiting' as const,
-        isPublic: settings.isPublic,
-        cardCount: settings.cardCount,
-        timeLimit: settings.timeLimit,
-        description: settings.description,
-        createdBy: player.name,
-        createdAt: new Date().toISOString(),
-        participants: [
-          {
-            id: player.name,
-            name: player.name,
-            avatar: player.avatar,
-            isReady: false,
-            isHost: true,
+      await handleApiCall(
+        () => createRoom({
+          roomName: settings.name,
+          maxPlayers: settings.maxPlayers,
+          initialHandSize: settings.cardCount,
+          turnTimeLimit: settings.timeLimit === 30 ? 30 : settings.timeLimit === 60 ? 60 : 0,
+          isPublic: settings.isPublic,
+        }),
+        (result) => {
+          console.log('Room created:', result);
+          // 待機画面に遷移
+          if (onNavigate) {
+            onNavigate(`waiting-room/${result.roomCode}`);
           }
-        ]
-      };
-
-      // LocalStorageに保存（実際のAPIまでのモック実装）
-      const existingRooms = JSON.parse(localStorage.getItem('rooms') || '[]');
-      const updatedRooms = [...existingRooms, newRoom];
-      localStorage.setItem('rooms', JSON.stringify(updatedRooms));
-
-      // 現在のルーム情報をLocalStorageに保存（待機画面で使用）
-      localStorage.setItem('currentRoom', JSON.stringify(newRoom));
-
-      console.log('Room created:', newRoom);
-
-      // 待機画面に遷移
-      if (onNavigate) {
-        onNavigate(`waiting-room/${roomCode}`);
-      }
-    } catch (error) {
-      console.error('Failed to create room:', error);
-      alert('ルームの作成に失敗しました。もう一度お試しください。');
+        },
+        (error) => {
+          console.error('Failed to create room:', error);
+          alert(`ルームの作成に失敗しました: ${error.message}`);
+        }
+      );
     } finally {
       setIsCreating(false);
     }

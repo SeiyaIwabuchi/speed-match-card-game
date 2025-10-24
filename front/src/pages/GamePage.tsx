@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Container, Header, Footer, Card, Button, GameBoard } from '../components';
+import { GameStats } from '../components/game';
 import { GameProvider, useGame } from '../contexts';
 
 interface GamePageProps {
@@ -212,6 +213,9 @@ const GamePageContent: React.FC<GamePageProps> = ({
               </div>
             </div>
           </Card>
+
+          {/* ゲーム統計 */}
+          <GameStats stats={gameState.stats} players={gameState.players} />
         </main>
 
         <Footer />

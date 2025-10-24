@@ -1,45 +1,70 @@
-import React, { useState } from 'react';
-import { Container, Header, Footer, Card, Button, Input } from '../components';
+import React, { useState, useEffect } from 'react';
+import { Container, Header, Footer, Card, Button, Input, ErrorMessage } from '../components';
+import { usePlayer } from '../contexts';
+import { useApiError } from '../hooks/useApiError';
+import { updatePlayer, getPlayerStats } from '../api/player';
 
 interface ProfilePageProps {
   onNavigate?: (page: string) => void;
   player?: {
+    id?: string;
     name: string;
     avatar?: string;
     wins?: number;
     totalGames?: number;
   } | null;
-  onPlayerUpdate?: (player: any) => void;
+  onPlayerUpdate?: (updates: Partial<{
+    id?: string;
+    name: string;
+    avatar?: string;
+    wins?: number;
+    totalGames?: number;
+  }>) => void;
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ 
-  onNavigate, 
-  player = { name: 'Guest', wins: 0, totalGames: 0 },
-  onPlayerUpdate 
+  onNavigate
 }) => {
+  const { player, updatePlayer: updatePlayerContext } = usePlayer();
+  const { hasError, error, clearError, handleApiCall } = useApiError();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: player?.name || '',
     avatar: player?.avatar || ''
   });
+  const [stats, setStats] = useState({
+    totalGames: 0,
+    wins: 0,
+    losses: 0,
+    fastestWin: null as number | null,
+    totalCardsPlayed: 0
+  });
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const winRate = ((player?.totalGames || 0) > 0) ? (((player?.wins || 0) / (player?.totalGames || 1)) * 100).toFixed(1) : '0.0';
+  const handleSave = async () => {
+    if (!player?.id) return;
 
-  const handleSave = () => {
-    if (!player) return;
-    
-    const updatedPlayer = {
-      ...player,
-      name: editForm.name,
-      avatar: editForm.avatar
-    };
-    
-    if (onPlayerUpdate) {
-      onPlayerUpdate(updatedPlayer);
-    }
-    
-    setIsEditing(false);
-    console.log('Profile updated:', updatedPlayer);
+    setIsSubmitting(true);
+    await handleApiCall(
+      () => updatePlayer(player.id!, {
+        username: editForm.name,
+        avatar: editForm.avatar
+      }),
+      (updatedPlayerData) => {
+        // APIレスポンスをPlayerContextの形式に変換
+        const updatedPlayer = {
+          ...player,
+          name: updatedPlayerData.username,
+          avatar: updatedPlayerData.avatar
+        };
+        
+        updatePlayerContext(updatedPlayer);
+        setIsEditing(false);
+        console.log('Profile updated:', updatedPlayer);
+      }
+    );
+    setIsSubmitting(false);
   };
 
   const handleCancel = () => {
@@ -50,11 +75,37 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     setIsEditing(false);
   };
 
-  const stats = [
-    { label: '総ゲーム数', value: player?.totalGames || 0 },
-    { label: '勝利数', value: player?.wins || 0 },
+  const winRate = ((stats.totalGames || 0) > 0) ? (((stats.wins || 0) / (stats.totalGames || 1)) * 100).toFixed(1) : '0.0';
+
+  // 統計情報をAPIから取得
+  useEffect(() => {
+    const loadStats = async () => {
+      if (player?.id) {
+        setIsLoadingStats(true);
+        await handleApiCall(
+          () => getPlayerStats(player.id!),
+          (statsData) => {
+            setStats({
+              totalGames: statsData.totalGames,
+              wins: statsData.totalWins,
+              losses: statsData.totalLosses,
+              fastestWin: statsData.fastestWin,
+              totalCardsPlayed: statsData.totalCardsPlayed
+            });
+          }
+        );
+        setIsLoadingStats(false);
+      }
+    };
+    
+    loadStats();
+  }, [player?.id, handleApiCall]);
+
+  const displayStats = [
+    { label: '総ゲーム数', value: stats.totalGames || 0 },
+    { label: '勝利数', value: stats.wins || 0 },
     { label: '勝率', value: `${winRate}%` },
-    { label: '連勝記録', value: 3 }, // TODO: 実装予定
+    { label: '最速勝利', value: stats.fastestWin ? `${stats.fastestWin}ターン` : '未達成' },
   ];
 
   const achievements = [
@@ -76,6 +127,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         
         <main>
           <div className="grid gap-6">
+            {/* エラーメッセージ表示 */}
+            {hasError && (
+              <ErrorMessage
+                error={error}
+                onClose={clearError}
+              />
+            )}
             {/* プロフィール情報 */}
             <Card variant="elevated">
               <div className="p-6">
@@ -95,6 +153,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         variant="primary" 
                         size="sm"
                         onClick={handleSave}
+                        loading={isSubmitting}
+                        disabled={isSubmitting}
                       >
                         保存
                       </Button>
@@ -102,6 +162,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         variant="secondary" 
                         size="sm"
                         onClick={handleCancel}
+                        disabled={isSubmitting}
                       >
                         キャンセル
                       </Button>
@@ -152,18 +213,24 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             <Card variant="elevated">
               <div className="p-6">
                 <h3 className="text-xl font-bold mb-4">プレイ統計</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {stats.map((stat, index) => (
-                    <div key={index} className="text-center p-4 bg-background-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-primary-600 mb-1">
-                        {stat.value}
+                {isLoadingStats ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-secondary">統計情報を読み込み中...</div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {displayStats.map((stat, index) => (
+                      <div key={index} className="text-center p-4 bg-background-secondary rounded-lg">
+                        <div className="text-2xl font-bold text-primary-600 mb-1">
+                          {stat.value}
+                        </div>
+                        <div className="text-sm text-secondary">
+                          {stat.label}
+                        </div>
                       </div>
-                      <div className="text-sm text-secondary">
-                        {stat.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </Card>
 

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Container, Header, Footer, Card, Button, Input } from '../components';
+import { Container, Header, Footer, Card, Button, Input, ErrorMessage } from '../components';
 import { usePlayer } from '../contexts';
+import { useApiError } from '../hooks/useApiError';
+import { registerPlayer } from '../api/player';
 
 interface PlayerRegistrationPageProps {
   onNavigate?: (page: string) => void;
@@ -22,6 +24,7 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
   onRegistrationComplete 
 }) => {
   const { setPlayer } = usePlayer();
+  const { hasError, error, clearError, handleApiCall } = useApiError();
   
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -69,28 +72,29 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length === 0) {
-      try {
-        // プレイヤー情報を保存
-        const newPlayer = {
-          name: formData.name.trim(),
-          avatar: formData.avatar,
-          wins: 0,
-          totalGames: 0
-        };
+      await handleApiCall(
+        () => registerPlayer(formData.name.trim(), formData.avatar),
+        (playerData) => {
+          // APIレスポンスをPlayerContextの形式に変換
+          const player = {
+            id: playerData.playerId,
+            name: playerData.username,
+            avatar: playerData.avatar,
+            token: playerData.token,
+            wins: 0,
+            totalGames: 0
+          };
 
-        setPlayer(newPlayer);
-        
-        // 登録完了の処理
-        if (onRegistrationComplete) {
-          onRegistrationComplete();
-        } else if (onNavigate) {
-          onNavigate('home');
+          setPlayer(player);
+          
+          // 登録完了の処理
+          if (onRegistrationComplete) {
+            onRegistrationComplete();
+          } else if (onNavigate) {
+            onNavigate('home');
+          }
         }
-
-      } catch (error) {
-        console.error('Registration failed:', error);
-        setErrors({ name: '登録に失敗しました。もう一度お試しください。' });
-      }
+      );
     }
 
     setIsSubmitting(false);
@@ -146,6 +150,13 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* エラーメッセージ表示 */}
+                {hasError && (
+                  <ErrorMessage
+                    error={error}
+                    onClose={clearError}
+                  />
+                )}
                 {/* プレイヤー名入力 */}
                 <div>
                   <label htmlFor="playerName" className="block text-sm font-medium mb-2">

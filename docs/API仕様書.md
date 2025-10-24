@@ -963,18 +963,202 @@ https://api.speedmatch.com/v1
 
 ## 6. ポーリングAPI（リアルタイム更新用）
 
-WebSocketの代わりにポーリングベースのAPIでリアルタイム更新を実現します。
+HTTP Last-Modifiedヘッダーを使用した効率的なポーリングAPIでリアルタイム更新を実現します。
 
 ### ポーリング戦略
 - **推奨ポーリング間隔**:
   - ルーム待機中: 2秒
   - ゲームプレイ中: 1秒
-  - チャット: 3秒
-- **Long Polling**: サーバー側で最大30秒待機し、変更があれば即座に返却
+- **HTTP条件付きリクエスト**: `If-Modified-Since`ヘッダーを使用して変更がない場合は304 Not Modifiedを返却
+- **Last-Modifiedヘッダー**: レスポンスに最終更新時刻を含めてクライアントが次回のリクエストで使用
 
 ---
 
-### 6.1 ルーム更新情報取得
+### 6.1 ルーム状態取得（ポーリング用）
+
+**エンドポイント:** `GET /rooms/code/{roomCode}/state`
+
+**概要:** ルームの現在の状態を取得（ポーリング用）
+
+**パスパラメータ:**
+- `roomCode`: 6桁のルームコード
+
+**リクエストヘッダー:**
+- `If-Modified-Since`: 前回取得時のLast-Modified値（オプション）
+
+**レスポンスヘッダー:**
+- `Last-Modified`: ルームの最終更新時刻（ISO 8601形式）
+
+**レスポンス:** `200 OK` (変更あり) または `304 Not Modified` (変更なし)
+```json
+{
+  "success": true,
+  "data": {
+    "roomId": "rm_abc123",
+    "roomCode": "ABC123",
+    "status": "waiting",
+    "players": [
+      {
+        "playerId": "pl_1234567890",
+        "username": "player123",
+        "avatar": "👤",
+        "isReady": true,
+        "isHost": true
+      },
+      {
+        "playerId": "pl_0987654321",
+        "username": "player456",
+        "avatar": "🎮",
+        "isReady": false,
+        "isHost": false
+      }
+    ],
+    "updatedAt": "2025-10-11T12:01:30Z"
+  }
+}
+```
+
+**エラー:**
+- `404` - ルームコードが無効
+
+---
+
+### 6.2 ゲーム状態取得（ポーリング用）
+
+**エンドポイント:** `GET /games/{gameId}/state`
+
+**概要:** ゲームの現在の状態を取得（ポーリング用）
+
+**パスパラメータ:**
+- `gameId`: ゲームID
+
+**リクエストヘッダー:**
+- `If-Modified-Since`: 前回取得時のLast-Modified値（オプション）
+
+**レスポンスヘッダー:**
+- `Last-Modified`: ゲームの最終更新時刻（ISO 8601形式）
+
+**レスポンス:** `200 OK` (変更あり) または `304 Not Modified` (変更なし)
+```json
+{
+  "success": true,
+  "data": {
+    "gameId": "gm_xyz789",
+    "roomId": "rm_abc123",
+    "status": "playing",
+    "players": [
+      {
+        "playerId": "pl_1234567890",
+        "username": "player123",
+        "avatar": "👤",
+        "handSize": 4,
+        "isCurrentTurn": false
+      },
+      {
+        "playerId": "pl_0987654321",
+        "username": "player456",
+        "avatar": "🎮",
+        "handSize": 6,
+        "isCurrentTurn": true
+      }
+    ],
+    "fieldCards": [
+      {
+        "cardId": "c_010",
+        "value": 6
+      }
+    ],
+    "updatedAt": "2025-10-11T12:16:00Z"
+  }
+}
+```
+
+**エラー:**
+- `404` - ゲームが見つからない
+
+---
+
+### 6.3 ポーリング実装例
+
+#### JavaScript/TypeScript
+```typescript
+class PollingClient {
+  private lastModified: { [key: string]: string } = {};
+
+  async pollRoomState(roomCode: string): Promise<RoomStateResponse | null> {
+    const url = `/api/v1/rooms/code/${roomCode}/state`;
+    const headers: HeadersInit = {};
+
+    if (this.lastModified[roomCode]) {
+      headers['If-Modified-Since'] = this.lastModified[roomCode];
+    }
+
+    const response = await fetch(url, { headers });
+
+    if (response.status === 304) {
+      return null; // 変更なし
+    }
+
+    const lastModified = response.headers.get('Last-Modified');
+    if (lastModified) {
+      this.lastModified[roomCode] = lastModified;
+    }
+
+    return response.json();
+  }
+
+  async pollGameState(gameId: string): Promise<GameStateResponse | null> {
+    const url = `/api/v1/games/${gameId}/state`;
+    const headers: HeadersInit = {};
+
+    if (this.lastModified[gameId]) {
+      headers['If-Modified-Since'] = this.lastModified[gameId];
+    }
+
+    const response = await fetch(url, { headers });
+
+    if (response.status === 304) {
+      return null; // 変更なし
+    }
+
+    const lastModified = response.headers.get('Last-Modified');
+    if (lastModified) {
+      this.lastModified[gameId] = lastModified;
+    }
+
+    return response.json();
+  }
+}
+
+// 使用例
+const pollingClient = new PollingClient();
+
+// ルーム状態のポーリング
+setInterval(async () => {
+  const roomState = await pollingClient.pollRoomState('ABC123');
+  if (roomState) {
+    // 状態が更新された場合の処理
+    updateRoomUI(roomState);
+  }
+}, 2000);
+
+// ゲーム状態のポーリング
+setInterval(async () => {
+  const gameState = await pollingClient.pollGameState('gm_xyz789');
+  if (gameState) {
+    // 状態が更新された場合の処理
+    updateGameUI(gameState);
+  }
+}, 1000);
+```
+
+---
+
+### 6.4 従来のポーリングAPI（WebSocket代替）
+
+WebSocketの代わりにポーリングベースのAPIでリアルタイム更新を実現します。
+
+#### 6.4.1 ルーム更新情報取得
 
 **エンドポイント:** `GET /rooms/{roomId}/updates`
 
@@ -1045,7 +1229,7 @@ WebSocketの代わりにポーリングベースのAPIでリアルタイム更�
 
 ---
 
-### 6.2 ゲーム更新情報取得
+#### 6.4.2 ゲーム更新情報取得
 
 **エンドポイント:** `GET /games/{gameId}/updates`
 
@@ -1124,7 +1308,7 @@ WebSocketの代わりにポーリングベースのAPIでリアルタイム更�
 
 ---
 
-### 6.3 チャット更新情報取得
+#### 6.4.3 チャット更新情報取得
 
 **エンドポイント:** `GET /rooms/{roomId}/chat/updates`
 
@@ -1163,7 +1347,7 @@ WebSocketの代わりにポーリングベースのAPIでリアルタイム更�
 
 ---
 
-### 6.4 プレイヤーステータス更新
+#### 6.4.4 プレイヤーステータス更新
 
 **エンドポイント:** `POST /players/{playerId}/heartbeat`
 
@@ -1198,7 +1382,7 @@ WebSocketの代わりにポーリングベースのAPIでリアルタイム更�
 
 ---
 
-### 6.5 一括状態取得（最適化版）
+#### 6.4.5 一括状態取得（最適化版）
 
 **エンドポイント:** `POST /polling/batch`
 
@@ -1253,7 +1437,7 @@ WebSocketの代わりにポーリングベースのAPIでリアルタイム更�
 
 ---
 
-### 6.6 ポーリング設定取得
+#### 6.4.6 ポーリング設定取得
 
 **エンドポイント:** `GET /polling/config`
 
