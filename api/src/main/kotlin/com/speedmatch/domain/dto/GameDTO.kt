@@ -165,3 +165,30 @@ data class CreateGameResponse(
     val status: String,
     val message: String
 )
+
+/**
+ * プレイヤー結果DTO
+ */
+@Serializable
+data class PlayerResultDTO(
+    val playerId: String,
+    val username: String,
+    val rank: Int, // 順位（1位、2位...）
+    val remainingCards: Int, // 残り手札枚数
+    val cardsPlayed: Int // プレイしたカード枚数
+)
+
+/**
+ * ゲーム結果レスポンス
+ */
+@Serializable
+data class GameResultResponse(
+    val gameId: String,
+    val roomId: String,
+    val status: String, // "FINISHED", "ABORTED"
+    val ranking: List<PlayerResultDTO>, // 順位順にソート済み
+    val playTimeSeconds: Long, // ゲームプレイ時間（秒）
+    val totalTurns: Int, // 総ターン数
+    val startedAt: Long, // 開始時刻（Unix timestamp）
+    val finishedAt: Long // 終了時刻（Unix timestamp）
+)
