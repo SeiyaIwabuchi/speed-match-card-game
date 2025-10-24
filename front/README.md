@@ -1,6 +1,93 @@
-# React + TypeScript + Vite
+# Speed Match Card Game - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+リアルタイム対戦型カードゲーム「Speed Match」のフロントエンド実装。
+
+## Tech Stack
+
+- **React 19** + **TypeScript** + **Vite**
+- **React Router** - クライアントサイドルーティング
+- **Axios** - HTTP通信
+- **Context API** - 状態管理
+- **Playwright** - E2Eテスト
+
+## Development
+
+### Prerequisites
+
+- Node.js 22.20.0 (Volta推奨)
+- バックエンドAPI（`http://localhost:8080`で起動）
+
+### Setup
+
+```bash
+# 依存関係のインストール
+npm install
+
+# 開発サーバー起動
+npm run dev
+# → http://localhost:5173
+```
+
+### Available Scripts
+
+```bash
+npm run dev          # 開発サーバー起動（HMR有効）
+npm run build        # 本番ビルド
+npm run lint         # ESLintチェック
+npm run preview      # ビルド結果のプレビュー
+npm run test:e2e     # E2Eテスト実行
+npm run test:e2e:ui  # E2EテストをUIモードで実行
+npm run test:e2e:headed    # ブラウザ表示でE2Eテスト実行
+npm run test:e2e:report    # テストレポート表示
+```
+
+## Testing
+
+### E2Eテスト
+
+Playwrightによる自動テストを実装済み：
+
+- ✅ **テスト1**: プレイヤー登録フロー
+- ✅ **テスト2**: ルーム作成とルームコード表示
+- ⏭️ **テスト3-8**: ゲーム機能テスト（スキップ中 - 今後実装予定）
+
+```bash
+# テスト実行
+npm run test:e2e
+
+# UIモードでデバッグ
+npm run test:e2e:ui
+```
+
+**注意**: E2Eテスト実行前にバックエンドサーバーを起動してください。
+
+## Project Structure
+
+```
+src/
+├── api/          # APIクライアント（axios）
+├── components/   # Reactコンポーネント
+│   ├── ui/       # 再利用可能なUIコンポーネント
+│   ├── layout/   # レイアウトコンポーネント
+│   └── game/     # ゲーム固有のコンポーネント
+├── contexts/     # Context API（状態管理）
+├── hooks/        # カスタムフック
+├── pages/        # ページコンポーネント
+└── styles/       # グローバルCSS・デザインシステム
+```
+
+## API Configuration
+
+環境変数でAPIベースURLを設定可能：
+
+```bash
+# .env.local
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+```
+
+---
+
+## Original Vite Template Info
 
 Currently, two official plugins are available:
 

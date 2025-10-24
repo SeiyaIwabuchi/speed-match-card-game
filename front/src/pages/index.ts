@@ -6,3 +6,4 @@ export { default as GamePage } from './GamePage';
 export { default as PlayerRegistrationPage } from './PlayerRegistrationPage';
 export { default as CreateRoomPage } from './CreateRoomPage';
 export { default as WaitingRoomPage } from './WaitingRoomPage';
+export { ResultPage } from './ResultPage';

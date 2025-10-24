@@ -1,6 +1,13 @@
 import React from 'react';
 import { Card } from '../ui';
-import type { GameStats as GameStatsType, Player } from '../../contexts/GameContext';
+import type { Player } from '../../contexts/GameContext';
+
+// 統計データ型（暫定）
+export interface GameStatsType {
+  totalTurns: number;
+  playTime: number;
+  playerActions: Record<string, number>;
+}
 
 export interface GameStatsProps {
   stats: GameStatsType;
@@ -22,7 +29,7 @@ const GameStats: React.FC<GameStatsProps> = ({ stats, players }) => {
     return currentActions > prevActions ? current : prev;
   }, players[0]);
 
-  const totalActions = Object.values(stats.playerActions).reduce((sum, count) => sum + count, 0);
+  const totalActions = Object.values(stats.playerActions).reduce((sum: number, count: number) => sum + count, 0);
 
   return (
     <Card variant="elevated">
@@ -66,9 +73,10 @@ const GameStats: React.FC<GameStatsProps> = ({ stats, players }) => {
                         ? 'bg-primary-500 text-white' 
                         : 'bg-primary-100 text-primary-600'
                     }`}>
-                      {player.avatar}
+                      {/* {player.avatar} */}
+                      {player.id.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm">{player.name}</span>
+                    <span className="text-sm">{/* {player.name} */}{player.id}</span>
                     {isMostActive && (
                       <span className="text-xs bg-primary-100 text-primary-600 px-2 py-0.5 rounded-full">
                         最多

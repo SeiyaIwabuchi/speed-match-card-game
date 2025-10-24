@@ -7,3 +7,6 @@ export * from './player';
 
 // Room API
 export * from './room';
+
+// Game API
+export * from './game';

@@ -84,6 +84,7 @@ object Games : Table("games") {
     val gameId = varchar("game_id", 50)
     val roomId = varchar("room_id", 50).references(Rooms.roomId)
     val status = varchar("status", 20).default("playing")
+    val stateJson = text("state_json") // ゲーム状態全体をJSON形式で保存
     val currentTurnPlayerId = varchar("current_turn_player_id", 50).references(Players.playerId).nullable()
     val turnNumber = integer("turn_number").default(1)
     val turnStartedAt = timestamp("turn_started_at").nullable()
@@ -93,6 +94,8 @@ object Games : Table("games") {
     val startedAt = timestamp("started_at")
     val finishedAt = timestamp("finished_at").nullable()
     val duration = integer("duration").nullable()
+    val createdAt = timestamp("created_at")
+    val updatedAt = timestamp("updated_at")
 
     override val primaryKey = PrimaryKey(gameId)
 }

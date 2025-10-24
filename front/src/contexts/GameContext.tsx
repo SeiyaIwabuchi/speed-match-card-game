@@ -1,47 +1,58 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { 
+  GameStateResponse,
+  PlayCardRequest,
+  DrawCardRequest,
+  SkipTurnRequest,
+  GameResultResponse
+} from '../api/game';
+import * as gameApi from '../api/game';
 
+// UI用のカードデータ型（既存のコードとの互換性維持）
 export interface CardData {
-  number: number;
-  suit: 'hearts' | 'diamonds' | 'clubs' | 'spades';
-  id: string;
+  suit: 'SPADES' | 'HEARTS' | 'DIAMONDS' | 'CLUBS';
+  rank: number; // 1-13
 }
 
+// UI用のプレイヤーデータ型
 export interface Player {
   id: string;
-  name: string;
-  avatar: string;
   handSize: number;
-  isReady: boolean;
+  hand: CardData[] | null; // 自分の手札のみ
+  rank: number | null;
 }
 
-export interface GameStats {
-  totalTurns: number;
-  playTime: number; // 秒単位
-  playerActions: { [playerId: string]: number };
-  gameStartTime: number | null;
-}
-
+// ゲーム状態型（APIレスポンスに基づく）
 export interface GameState {
+  gameId: string | null;
   roomId: string;
   players: Player[];
+  fieldCards: {
+    first: CardData;
+    second: CardData;
+  } | null;
+  currentPlayerId: string;
   currentPlayerIndex: number;
-  centerCard: CardData;
-  playerHand: CardData[];
-  gamePhase: 'waiting' | 'playing' | 'finished';
-  timeLeft: number;
-  winner: Player | null;
-  gameHistory: CardData[];
-  stats: GameStats;
+  deckRemaining: number;
+  status: 'PLAYING' | 'FINISHED' | 'ABORTED' | 'WAITING';
+  playableCards: CardData[] | null;
+  startedAt: number | null;
+  lastUpdatedAt: number | null;
 }
 
 interface GameContextType {
   gameState: GameState;
+  gameResult: GameResultResponse | null;
+  loading: boolean;
+  error: string | null;
   isPlayerTurn: () => boolean;
-  playCard: (card: CardData) => void;
-  leaveGame: () => void;
-  startGame: () => void;
-  resetGame: () => void;
+  fetchGameState: () => Promise<void>;
+  fetchGameResult: () => Promise<void>;
+  handlePlayCard: (card: CardData, targetField: number) => Promise<void>;
+  handleDrawCard: () => Promise<void>;
+  handleSkipTurn: () => Promise<void>;
+  clearError: () => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -56,201 +67,230 @@ export const useGame = (): GameContextType => {
 
 interface GameProviderProps {
   children: ReactNode;
-  roomId: string;
+  gameId?: string; // ゲームID（既存ゲームに参加する場合）
+  roomId?: string; // ルームID（新規ゲーム作成時）
   playerId: string;
 }
 
 export const GameProvider: React.FC<GameProviderProps> = ({ 
   children, 
-  roomId, 
+  gameId: initialGameId,
+  roomId: initialRoomId,
   playerId 
 }) => {
-  const [gameState, setGameState] = useState<GameState>(() => {
-    // 初期ゲーム状態（モックデータ）
-    return {
-      roomId,
-      players: [
-        { id: playerId, name: 'あなた', avatar: 'Y', handSize: 5, isReady: true },
-        { id: 'player2', name: 'プレイヤー2', avatar: 'P', handSize: 5, isReady: true },
-        { id: 'player3', name: 'プレイヤー3', avatar: 'Q', handSize: 5, isReady: true },
-      ],
-      currentPlayerIndex: 0,
-      centerCard: { id: 'center-1', number: 7, suit: 'hearts' },
-      playerHand: [
-        { id: 'hand-1', number: 6, suit: 'spades' },
-        { id: 'hand-2', number: 8, suit: 'hearts' },
-        { id: 'hand-3', number: 7, suit: 'clubs' },
-        { id: 'hand-4', number: 3, suit: 'diamonds' },
-        { id: 'hand-5', number: 9, suit: 'hearts' },
-      ],
-      gamePhase: 'playing',
-      timeLeft: 30,
-      winner: null,
-      gameHistory: [],
-      stats: {
-        totalTurns: 0,
-        playTime: 0,
-        playerActions: {
-          [playerId]: 0,
-          'player2': 0,
-          'player3': 0
-        },
-        gameStartTime: Date.now()
-      }
-    };
+  const [gameState, setGameState] = useState<GameState>({
+    gameId: initialGameId || null,
+    roomId: initialRoomId || '',
+    players: [],
+    fieldCards: null,
+    currentPlayerId: '',
+    currentPlayerIndex: 0,
+    deckRemaining: 0,
+    status: 'WAITING',
+    playableCards: null,
+    startedAt: null,
+    lastUpdatedAt: null
   });
 
-  // タイマー管理とプレイ時間計測
-  useEffect(() => {
-    if (gameState.gamePhase !== 'playing') return;
-    
-    const timer = setInterval(() => {
-      setGameState(prev => {
-        const newPlayTime = prev.stats.gameStartTime 
-          ? Math.floor((Date.now() - prev.stats.gameStartTime) / 1000)
-          : prev.stats.playTime;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [gameResult, setGameResult] = useState<GameResultResponse | null>(null);
 
-        if (prev.timeLeft <= 1) {
-          // 時間切れ - 次のプレイヤーのターン
-          return {
-            ...prev,
-            currentPlayerIndex: (prev.currentPlayerIndex + 1) % prev.players.length,
-            timeLeft: 30,
-            stats: {
-              ...prev.stats,
-              playTime: newPlayTime,
-              totalTurns: prev.stats.totalTurns + 1
-            }
-          };
-        }
-        return {
-          ...prev,
-          timeLeft: prev.timeLeft - 1,
-          stats: {
-            ...prev.stats,
-            playTime: newPlayTime
-          }
-        };
-      });
-    }, 1000);
+  // APIレスポンスをGameStateに変換
+  const convertToGameState = (response: GameStateResponse): GameState => {
+    return {
+      gameId: response.gameId,
+      roomId: response.roomId,
+      players: response.players.map(p => ({
+        id: p.playerId,
+        handSize: p.handSize,
+        hand: p.hand,
+        rank: p.rank
+      })),
+      fieldCards: response.fieldCards,
+      currentPlayerId: response.currentPlayerId,
+      currentPlayerIndex: response.currentPlayerIndex,
+      deckRemaining: response.deckRemaining,
+      status: response.status,
+      playableCards: response.playableCards,
+      startedAt: response.startedAt,
+      lastUpdatedAt: response.lastUpdatedAt
+    };
+  };
 
-    return () => clearInterval(timer);
-  }, [gameState.gamePhase, gameState.currentPlayerIndex]);
+  // ゲーム状態を取得
+  const fetchGameState = async (): Promise<void> => {
+    if (!gameState.gameId) {
+      setError('ゲームIDが設定されていません');
+      return;
+    }
 
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await gameApi.getGameState(gameState.gameId, playerId);
+      setGameState(convertToGameState(response));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'ゲーム状態の取得に失敗しました';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ゲーム結果を取得
+  const fetchGameResult = async (): Promise<void> => {
+    if (!gameState.gameId) {
+      setError('ゲームIDが設定されていません');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await gameApi.getGameResult(gameState.gameId);
+      setGameResult(response);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'ゲーム結果の取得に失敗しました';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 自分のターンかチェック
   const isPlayerTurn = (): boolean => {
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    return currentPlayer?.id === playerId && gameState.gamePhase === 'playing';
+    return gameState.currentPlayerId === playerId && gameState.status === 'PLAYING';
   };
 
-  const playCard = (card: CardData): void => {
-    if (!isPlayerTurn()) return;
-    
-    setGameState(prev => {
-      // 手札からカードを削除
-      const newHand = prev.playerHand.filter(c => c.id !== card.id);
+  // カードをプレイ
+  const handlePlayCard = async (card: CardData, targetField: number): Promise<void> => {
+    if (!gameState.gameId) {
+      setError('ゲームIDが設定されていません');
+      return;
+    }
+
+    if (!isPlayerTurn()) {
+      setError('あなたのターンではありません');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const request: PlayCardRequest = {
+        playerId,
+        card,
+        targetField
+      };
+
+      const response = await gameApi.playCard(gameState.gameId, request);
       
-      // プレイヤーの手札数を更新
-      const updatedPlayers = prev.players.map(player => 
-        player.id === playerId 
-          ? { ...player, handSize: newHand.length }
-          : player
-      );
+      if (response.success && response.gameState) {
+        setGameState(convertToGameState(response.gameState));
+      } else {
+        setError(response.message || 'カードのプレイに失敗しました');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'カードのプレイに失敗しました';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // 勝利条件チェック
-      const winner = newHand.length === 0 
-        ? prev.players.find(p => p.id === playerId) || null
-        : null;
+  // カードをドロー
+  const handleDrawCard = async (): Promise<void> => {
+    if (!gameState.gameId) {
+      setError('ゲームIDが設定されていません');
+      return;
+    }
 
-      // 統計情報を更新
-      const newPlayerActions = {
-        ...prev.stats.playerActions,
-        [playerId]: (prev.stats.playerActions[playerId] || 0) + 1
+    if (!isPlayerTurn()) {
+      setError('あなたのターンではありません');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const request: DrawCardRequest = {
+        playerId
       };
 
-      const playTime = prev.stats.gameStartTime 
-        ? Math.floor((Date.now() - prev.stats.gameStartTime) / 1000)
-        : prev.stats.playTime;
+      const response = await gameApi.drawCard(gameState.gameId, request);
+      
+      if (response.success && response.gameState) {
+        setGameState(convertToGameState(response.gameState));
+      } else {
+        setError(response.message || 'カードのドローに失敗しました');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'カードのドローに失敗しました';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      return {
-        ...prev,
-        centerCard: card,
-        playerHand: newHand,
-        players: updatedPlayers,
-        currentPlayerIndex: (prev.currentPlayerIndex + 1) % prev.players.length,
-        timeLeft: 30,
-        gameHistory: [...prev.gameHistory, card],
-        winner,
-        gamePhase: winner ? 'finished' : 'playing',
-        stats: {
-          ...prev.stats,
-          totalTurns: prev.stats.totalTurns + 1,
-          playerActions: newPlayerActions,
-          playTime
-        }
+  // ターンをスキップ
+  const handleSkipTurn = async (): Promise<void> => {
+    if (!gameState.gameId) {
+      setError('ゲームIDが設定されていません');
+      return;
+    }
+
+    if (!isPlayerTurn()) {
+      setError('あなたのターンではありません');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const request: SkipTurnRequest = {
+        playerId
       };
-    });
-  };
 
-  const leaveGame = (): void => {
-    setGameState(prev => ({
-      ...prev,
-      gamePhase: 'finished'
-    }));
-  };
-
-  const startGame = (): void => {
-    setGameState(prev => ({
-      ...prev,
-      gamePhase: 'playing',
-      timeLeft: 30,
-      stats: {
-        totalTurns: 0,
-        playTime: 0,
-        playerActions: Object.keys(prev.stats.playerActions).reduce((acc, key) => ({
-          ...acc,
-          [key]: 0
-        }), {}),
-        gameStartTime: Date.now()
+      const response = await gameApi.skipTurn(gameState.gameId, request);
+      
+      if (response.success && response.gameState) {
+        setGameState(convertToGameState(response.gameState));
+      } else {
+        setError(response.message || 'ターンのスキップに失敗しました');
       }
-    }));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'ターンのスキップに失敗しました';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const resetGame = (): void => {
-    setGameState(prev => ({
-      ...prev,
-      gamePhase: 'waiting',
-      currentPlayerIndex: 0,
-      timeLeft: 30,
-      winner: null,
-      gameHistory: [],
-      centerCard: { id: 'center-reset', number: 7, suit: 'hearts' },
-      playerHand: [
-        { id: 'hand-new-1', number: 6, suit: 'spades' },
-        { id: 'hand-new-2', number: 8, suit: 'hearts' },
-        { id: 'hand-new-3', number: 7, suit: 'clubs' },
-        { id: 'hand-new-4', number: 3, suit: 'diamonds' },
-        { id: 'hand-new-5', number: 9, suit: 'hearts' },
-      ],
-      players: prev.players.map(p => ({ ...p, handSize: 5 })),
-      stats: {
-        totalTurns: 0,
-        playTime: 0,
-        playerActions: Object.keys(prev.stats.playerActions).reduce((acc, key) => ({
-          ...acc,
-          [key]: 0
-        }), {}),
-        gameStartTime: null
-      }
-    }));
+  const clearError = (): void => {
+    setError(null);
   };
 
   const contextValue: GameContextType = {
     gameState,
+    gameResult,
+    loading,
+    error,
     isPlayerTurn,
-    playCard,
-    leaveGame,
-    startGame,
-    resetGame
+    fetchGameState,
+    fetchGameResult,
+    handlePlayCard,
+    handleDrawCard,
+    handleSkipTurn,
+    clearError
   };
 
   return (
