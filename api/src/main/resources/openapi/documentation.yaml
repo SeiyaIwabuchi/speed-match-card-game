@@ -920,6 +920,7 @@ components:
 paths:
   /:
     get:
+      tags: ["others"]
       summary: "Hello World"
       description: "シンプルなHello Worldエンドポイント"
       responses:
@@ -933,6 +934,7 @@ paths:
 
   /health:
     get:
+      tags: ["others"]
       summary: "Health Check"
       description: "サーバーの稼働状態を確認するヘルスチェックエンドポイント"
       responses:
@@ -953,6 +955,7 @@ paths:
 
   /api/v1/hello:
     get:
+      tags: ["others"]
       summary: "API v1 Hello"
       description: "API v1のHelloエンドポイント"
       responses:
@@ -967,6 +970,7 @@ paths:
   # プレイヤー管理API
   /api/v1/players:
     post:
+      tags: ["players"]
       summary: "プレイヤー登録"
       description: "新規プレイヤーを登録します"
       requestBody:
@@ -1011,6 +1015,7 @@ paths:
         example: "pl_1234567890"
 
     get:
+      tags: ["players"]
       summary: "プレイヤー情報取得"
       description: "指定されたプレイヤーの情報を取得します"
       responses:
@@ -1033,6 +1038,7 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
     put:
+      tags: ["players"]
       summary: "プレイヤー情報更新"
       description: "指定されたプレイヤーの情報を更新します"
       requestBody:
@@ -1083,6 +1089,7 @@ paths:
         example: "pl_1234567890"
 
     get:
+      tags: ["players"]
       summary: "プレイヤー統計取得"
       description: "指定されたプレイヤーの詳細統計を取得します"
       responses:
@@ -1119,6 +1126,7 @@ paths:
         example: "ABC123"
 
     get:
+      tags: ["rooms"]
       summary: "ルーム状態取得（ポーリング用）"
       description: "ルームの現在の状態を取得します。If-Modified-Sinceヘッダーを使用して効率的なポーリングを実現します。"
       parameters:
@@ -1159,6 +1167,7 @@ paths:
   # Phase 14 ゲームAPI
   /api/v1/games:
     post:
+      tags: ["games"]
       summary: "ゲーム作成"
       description: "新しいゲームを作成し、初期状態を設定します。デッキをシャッフルし、各プレイヤーに7枚ずつ配り、場札を2枚設定します。"
       requestBody:
@@ -1204,6 +1213,7 @@ paths:
         example: "pl_test_001"
 
     get:
+      tags: ["games"]
       summary: "ゲーム状態取得"
       description: "ゲームの現在の状態を取得します。playerIdを指定すると、そのプレイヤーの手札とプレイ可能カードが含まれます。"
       responses:
@@ -1242,6 +1252,7 @@ paths:
         example: "game_1234567890"
 
     post:
+      tags: ["games"]
       summary: "カードプレイ"
       description: "カードを場に出します。同じスートまたはランク±1のカードのみプレイ可能です。"
       requestBody:
@@ -1288,6 +1299,7 @@ paths:
         example: "game_1234567890"
 
     post:
+      tags: ["games"]
       summary: "カードドロー"
       description: "山札からカードを1枚引きます。プレイ可能なカードがない場合のみ実行できます。"
       requestBody:
@@ -1334,6 +1346,7 @@ paths:
         example: "game_1234567890"
 
     post:
+      tags: ["games"]
       summary: "ターンスキップ"
       description: "ターンをスキップします。山札が空でプレイ可能なカードがない場合のみ実行できます。"
       requestBody:
@@ -1380,6 +1393,7 @@ paths:
         example: "game_1234567890"
 
     get:
+      tags: ["games"]
       summary: "ゲーム結果取得"
       description: "終了したゲームの結果を取得します。ランキング、プレイ時間、統計情報を含みます。"
       responses:
@@ -1450,6 +1464,7 @@ paths:
         example: "rm_abc123"
 
     post:
+      tags: ["rooms"]
       summary: "チャットメッセージ送信"
       description: "ルーム内にチャットメッセージを送信します。"
       requestBody:
@@ -1484,6 +1499,7 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
     get:
+      tags: ["rooms"]
       summary: "チャットメッセージ履歴取得"
       description: "ルームのチャットメッセージ履歴を取得します。ページネーションに対応しています。"
       parameters:
@@ -1533,6 +1549,7 @@ paths:
   /api/v1/rooms:
 
     post:
+      tags: ["rooms"]
       summary: "ルーム作成"
       description: "新しいゲームルームを作成します"
       requestBody:
@@ -1561,6 +1578,7 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
     get:
+      tags: ["rooms"]
       summary: "ルーム一覧取得"
       description: "公開ルームの一覧を取得します"
       parameters:
@@ -1620,6 +1638,7 @@ paths:
         example: "rm_abc123"
 
     get:
+      tags: ["rooms"]
       summary: "ルーム詳細取得"
       description: "指定されたルームの詳細情報を取得します"
       responses:
@@ -1652,6 +1671,7 @@ paths:
         example: "rm_abc123"
 
     post:
+      tags: ["rooms"]
       summary: "ルーム参加"
       description: "指定されたルームに参加します"
       requestBody:
@@ -1696,6 +1716,7 @@ paths:
         example: "rm_abc123"
 
     post:
+      tags: ["rooms"]
       summary: "ルーム退出"
       description: "指定されたルームから退出します"
       requestBody:
@@ -1740,6 +1761,7 @@ paths:
         example: "rm_abc123"
 
     post:
+      tags: ["rooms"]
       summary: "準備完了設定"
       description: "プレイヤーの準備完了状態を設定します"
       requestBody:
@@ -1784,6 +1806,7 @@ paths:
         example: "rm_abc123"
 
     post:
+      tags: ["rooms"]
       summary: "ゲーム開始"
       description: "ルーム内のゲームを開始します（ホストのみ）"
       requestBody:
@@ -1831,6 +1854,7 @@ paths:
         example: "ABC123"
 
     get:
+      tags: ["rooms"]
       summary: "ルームコードでルーム取得"
       description: "ルームコードを使用してルーム情報を取得します"
       responses:
