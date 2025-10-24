@@ -167,3 +167,16 @@ data class PaginationInfo(
     val total: Int,
     val totalPages: Int
 )
+
+/**
+ * Room state response DTO (for polling)
+ */
+@Serializable
+data class RoomStateResponse(
+    val roomId: String,
+    val roomCode: String,
+    val roomName: String?,
+    val status: String,
+    val players: List<RoomPlayerInfo>,
+    val updatedAt: String
+)

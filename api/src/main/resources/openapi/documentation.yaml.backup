@@ -256,18 +256,6 @@ components:
           description: "現在のターンかどうか"
           example: false
 
-    CardInfo:
-      type: object
-      properties:
-        cardId:
-          type: string
-          description: "カードID"
-          example: "c_010"
-        value:
-          type: integer
-          description: "カードの値"
-          example: 6
-
     # ルーム関連スキーマ
     RoomCreateRequest:
       type: object
@@ -978,16 +966,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
-
-  /api/rooms/{roomId}/join:
-    parameters:
-      - name: roomId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ルームID"
-        example: "rm_abc123"
 
     post:
       summary: "ルーム参加"

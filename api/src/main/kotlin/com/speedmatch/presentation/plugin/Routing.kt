@@ -6,6 +6,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import com.speedmatch.presentation.routes.playerRoutes
 import com.speedmatch.presentation.routes.roomRoutes
+import com.speedmatch.presentation.routes.gameRoutes
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -41,6 +42,7 @@ fun Application.configureRouting() {
             }
             playerRoutes()
             roomRoutes()
+            gameRoutes()
         }
     }
 }

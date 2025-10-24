@@ -39,4 +39,5 @@ dependencies {
     // Testing
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
+    testRuntimeOnly("com.h2database:h2:2.1.214")
 }

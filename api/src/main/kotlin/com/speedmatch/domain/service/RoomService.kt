@@ -20,36 +20,34 @@ class RoomService {
             val hostExists = Players.selectAll().where { Players.playerId eq hostId }
                 .singleOrNull() ?: throw NotFoundException("PLAYER_NOT_FOUND", "ホストプレイヤーが見つかりません")
 
-            // ユニークなルームコードを生成
-            val roomCode = generateUniqueRoomCode()
-
             val now = Instant.now()
             val roomId = "rm_${UUID.randomUUID().toString().replace("-", "").substring(0, 16)}"
+            val roomCode = generateUniqueRoomCode()
 
             // ルームを作成
             Rooms.insert {
                 it[Rooms.roomId] = roomId
                 it[Rooms.roomCode] = roomCode
-                it[roomName] = request.roomName
+                it[Rooms.roomName] = request.roomName
                 it[Rooms.hostId] = hostId
-                it[maxPlayers] = request.maxPlayers
-                it[currentPlayers] = 1
-                it[initialHandSize] = request.initialHandSize
-                it[turnTimeLimit] = request.turnTimeLimit
-                it[isPublic] = request.isPublic
-                it[status] = "waiting"
-                it[createdAt] = now
-                it[updatedAt] = now
+                it[Rooms.maxPlayers] = request.maxPlayers
+                it[Rooms.currentPlayers] = 1
+                it[Rooms.initialHandSize] = request.initialHandSize
+                it[Rooms.turnTimeLimit] = request.turnTimeLimit
+                it[Rooms.isPublic] = request.isPublic
+                it[Rooms.status] = "waiting"
+                it[Rooms.createdAt] = now
+                it[Rooms.updatedAt] = now
             }
 
             // ホストをルームプレイヤーとして追加
             RoomPlayers.insert {
-                it[roomId] = roomId
-                it[playerId] = hostId
-                it[isReady] = false
-                it[isHost] = true
-                it[joinOrder] = 1
-                it[joinedAt] = now
+                it[RoomPlayers.roomId] = roomId
+                it[RoomPlayers.playerId] = hostId
+                it[RoomPlayers.isReady] = false
+                it[RoomPlayers.isHost] = true
+                it[RoomPlayers.joinOrder] = 1
+                it[RoomPlayers.joinedAt] = now
             }
 
             // レスポンスを作成
@@ -218,7 +216,7 @@ class RoomService {
             val newCurrentPlayers = room[Rooms.currentPlayers] + 1
             Rooms.update({ Rooms.roomId eq roomId }) {
                 it[currentPlayers] = newCurrentPlayers
-                it[updatedAt] = now
+                it[updatedAt] = java.time.Instant.now()
             }
 
             RoomJoinResponse(
@@ -254,7 +252,7 @@ class RoomService {
             val newCurrentPlayers = room[Rooms.currentPlayers] - 1
             Rooms.update({ Rooms.roomId eq roomId }) {
                 it[currentPlayers] = newCurrentPlayers
-                it[updatedAt] = now
+                it[updatedAt] = java.time.Instant.now()
             }
 
             // ホストが退出した場合、新しいホストを決定
@@ -302,7 +300,7 @@ class RoomService {
             }
 
             Rooms.update({ Rooms.roomId eq roomId }) {
-                it[updatedAt] = Instant.now()
+                it[updatedAt] = java.time.Instant.now()
             }
         }
 
@@ -351,7 +349,7 @@ class RoomService {
             Rooms.update({ Rooms.roomId eq roomId }) {
                 it[status] = "playing"
                 it[startedAt] = now
-                it[updatedAt] = now
+                it[updatedAt] = java.time.Instant.now()
             }
 
             // ゲームを作成
@@ -427,6 +425,27 @@ class RoomService {
 
         if (request.turnTimeLimit != 0 && request.turnTimeLimit != 30 && request.turnTimeLimit != 60) {
             throw ValidationException("INVALID_TIME_LIMIT", "ターン時間制限は0（なし）、30秒、または60秒である必要があります")
+        }
+    }
+
+    /**
+     * ルーム状態を取得（ポーリング用）
+     */
+    fun getRoomState(roomCode: String): RoomStateResponse {
+        return transaction {
+            val room = Rooms.selectAll().where { Rooms.roomCode eq roomCode }
+                .singleOrNull() ?: throw NotFoundException("ROOM_NOT_FOUND", "ルームが見つかりません")
+
+            val players = getRoomPlayers(room[Rooms.roomId])
+
+            RoomStateResponse(
+                roomId = room[Rooms.roomId],
+                roomCode = room[Rooms.roomCode],
+                roomName = room[Rooms.roomName],
+                status = room[Rooms.status],
+                players = players,
+                updatedAt = room[Rooms.updatedAt].toString()
+            )
         }
     }
 }

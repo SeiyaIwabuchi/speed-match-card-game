@@ -410,7 +410,77 @@ fun Route.roomRoutes() {
                     ApiErrorResponse(
                         error = ErrorDetails(
                             code = "INTERNAL_ERROR",
-                        message = "サーバー内部エラーが発生しました"
+                            message = "サーバー内部エラーが発生しました"
+                        )
+                    )
+                )
+            }
+        }
+
+        /**
+         * GET /rooms/code/{roomCode}/state - ルーム状態取得（ポーリング用）
+         */
+        get("/code/{roomCode}/state") {
+            try {
+                val roomCode = call.parameters["roomCode"]
+                    ?: throw ValidationException("MISSING_ROOM_CODE", "ルームコードが指定されていません")
+                val safeRoomCode = roomCode!!
+
+                logger.info("ルーム状態取得リクエスト: roomCode=$safeRoomCode")
+
+                val response = roomService.getRoomState(safeRoomCode)
+
+                // Last-Modifiedヘッダーを設定
+                call.response.headers.append("Last-Modified", response.updatedAt)
+
+                // If-Modified-Sinceヘッダーが送信された場合、変更がないかチェック
+                val ifModifiedSince = call.request.headers["If-Modified-Since"]
+                if (ifModifiedSince != null && ifModifiedSince == response.updatedAt) {
+                    call.respond(HttpStatusCode.NotModified)
+                    return@get
+                }
+
+                call.respond(
+                    HttpStatusCode.OK,
+                    ApiResponse(
+                        success = true,
+                        data = response
+                    )
+                )
+
+                logger.debug("ルーム状態取得成功: roomCode=$safeRoomCode")
+
+            } catch (e: ValidationException) {
+                logger.warn("バリデーションエラー: ${e.message ?: "Unknown error"}")
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiErrorResponse(
+                        error = ErrorDetails(
+                            code = e.code,
+                            message = e.message ?: "Unknown error"
+                        )
+                    )
+                )
+            } catch (e: NotFoundException) {
+                logger.warn("ルーム見つからない: ${e.message ?: "Unknown error"}")
+                call.respond(
+                    HttpStatusCode.NotFound,
+                    ApiErrorResponse(
+                        error = ErrorDetails(
+                            code = e.code,
+                            message = e.message ?: "Unknown error"
+                        )
+                    )
+                )
+            } catch (e: Exception) {
+                logger.error("ルーム状態取得エラー", e)
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ApiErrorResponse(
+                        error = ErrorDetails(
+                            code = "INTERNAL_ERROR",
+                            message = "サーバー内部エラーが発生しました"
+                        )
                     )
                 )
             }
