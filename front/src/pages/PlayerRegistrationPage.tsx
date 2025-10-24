@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Header, Footer, Card, Button, Input, ErrorMessage } from '../components';
 import { usePlayer } from '../contexts';
 import { useApiError } from '../hooks/useApiError';
@@ -23,7 +23,7 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
   onNavigate, 
   onRegistrationComplete 
 }) => {
-  const { setPlayer } = usePlayer();
+  const { player, setPlayer } = usePlayer();
   const { hasError, error, clearError, handleApiCall } = useApiError();
   
   const [formData, setFormData] = useState<FormData>({
@@ -33,6 +33,16 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
   
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // すでに登録済みのユーザーはホーム画面にリダイレクト
+  useEffect(() => {
+    if (player) {
+      console.log('すでに登録済みのユーザーが登録画面にアクセスしました。ホーム画面にリダイレクトします。');
+      if (onNavigate) {
+        onNavigate('home');
+      }
+    }
+  }, [player, onNavigate]);
 
   // プリセットアバターリスト
   const presetAvatars = [
