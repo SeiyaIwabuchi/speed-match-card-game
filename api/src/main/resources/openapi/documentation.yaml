@@ -965,7 +965,7 @@ paths:
                 example: "Hello from API v1!"
 
   # プレイヤー管理API
-  /api/players:
+  /api/v1/players:
     post:
       summary: "プレイヤー登録"
       description: "新規プレイヤーを登録します"
@@ -1000,7 +1000,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
-  /api/players/{playerId}:
+  /api/v1/players/{playerId}:
     parameters:
       - name: playerId
         in: path
@@ -1072,7 +1072,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
-  /api/players/{playerId}/stats:
+  /api/v1/players/{playerId}/stats:
     parameters:
       - name: playerId
         in: path
@@ -1105,7 +1105,7 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   # ポーリングAPI（Phase 11）
-  /api/rooms/code/{roomCode}/state:
+  /api/v1/rooms/code/{roomCode}/state:
     parameters:
       - name: roomCode
         in: path
@@ -1439,7 +1439,7 @@ paths:
                   message: "ゲームが見つかりません"
 
   # チャットAPI
-  /api/rooms/{roomId}/chat:
+  /api/v1/rooms/{roomId}/chat:
     parameters:
       - name: roomId
         in: path
@@ -1530,7 +1530,7 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   # ルーム管理API
-  /api/rooms:
+  /api/v1/rooms:
 
     post:
       summary: "ルーム作成"
@@ -1609,7 +1609,7 @@ paths:
                       data:
                         $ref: "#/components/schemas/RoomListResponse"
 
-  /api/rooms/{roomId}:
+  /api/v1/rooms/{roomId}:
     parameters:
       - name: roomId
         in: path
@@ -1641,7 +1641,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
-  /api/rooms/{roomId}/join:
+  /api/v1/rooms/{roomId}/join:
     parameters:
       - name: roomId
         in: path
@@ -1685,7 +1685,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
-  /api/rooms/{roomId}/leave:
+  /api/v1/rooms/{roomId}/leave:
     parameters:
       - name: roomId
         in: path
@@ -1729,7 +1729,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
-  /api/rooms/{roomId}/ready:
+  /api/v1/rooms/{roomId}/ready:
     parameters:
       - name: roomId
         in: path
@@ -1773,7 +1773,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
-  /api/rooms/{roomId}/start:
+  /api/v1/rooms/{roomId}/start:
     parameters:
       - name: roomId
         in: path
@@ -1817,7 +1817,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
-  /api/rooms/code/{roomCode}:
+  /api/v1/rooms/code/{roomCode}:
     parameters:
       - name: roomCode
         in: path
