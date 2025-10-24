@@ -448,4 +448,122 @@ class RoomService {
             )
         }
     }
+
+    /**
+     * チャットメッセージを送信
+     */
+    fun sendMessage(roomId: String, request: ChatMessageRequest): ChatMessageResponse {
+        // メッセージのバリデーション
+        if (request.message.isBlank()) {
+            throw ValidationException("EMPTY_MESSAGE", "メッセージが空です")
+        }
+        if (request.message.length > 200) {
+            throw ValidationException("MESSAGE_TOO_LONG", "メッセージは200文字以内である必要があります")
+        }
+        if (request.type !in listOf("text", "emoji", "preset")) {
+            throw ValidationException("INVALID_MESSAGE_TYPE", "メッセージタイプが無効です")
+        }
+
+        return transaction {
+            // ルームが存在するかチェック
+            Rooms.selectAll().where { Rooms.roomId eq roomId }
+                .singleOrNull() ?: throw NotFoundException("ROOM_NOT_FOUND", "ルームが見つかりません")
+
+            // プレイヤーが存在するかチェック
+            val player = Players.selectAll().where { Players.playerId eq request.playerId }
+                .singleOrNull() ?: throw NotFoundException("PLAYER_NOT_FOUND", "プレイヤーが見つかりません")
+
+            // プレイヤーがルームに参加しているかチェック
+            val roomPlayer = RoomPlayers.selectAll()
+                .where { (RoomPlayers.roomId eq roomId) and (RoomPlayers.playerId eq request.playerId) and RoomPlayers.leftAt.isNull() }
+                .singleOrNull() ?: throw ValidationException("NOT_IN_ROOM", "ルームに参加していません")
+
+            val now = Instant.now()
+
+            // メッセージを挿入
+            val messageId = ChatMessages.insert {
+                it[ChatMessages.roomId] = roomId
+                it[playerId] = request.playerId
+                it[message] = request.message
+                it[messageType] = request.type
+                it[createdAt] = now
+            } get ChatMessages.messageId
+
+            ChatMessageResponse(
+                messageId = messageId.toString(),
+                roomId = roomId,
+                playerId = request.playerId,
+                username = player[Players.username],
+                avatar = player[Players.avatar],
+                message = request.message,
+                type = request.type,
+                createdAt = now.toString()
+            )
+        }
+    }
+
+    /**
+     * チャットメッセージ履歴を取得
+     */
+    fun getMessages(roomId: String, limit: Int = 20, before: String? = null): ChatMessagesResponse {
+        // limitのバリデーション
+        val validLimit = limit.coerceIn(1, 100)
+
+        return transaction {
+            // ルームが存在するかチェック
+            Rooms.selectAll().where { Rooms.roomId eq roomId }
+                .singleOrNull() ?: throw NotFoundException("ROOM_NOT_FOUND", "ルームが見つかりません")
+
+            // クエリを作成
+            var query = ChatMessages
+                .innerJoin(Players, { ChatMessages.playerId }, { Players.playerId })
+                .select(
+                    ChatMessages.messageId,
+                    ChatMessages.roomId,
+                    ChatMessages.playerId,
+                    Players.username,
+                    Players.avatar,
+                    ChatMessages.message,
+                    ChatMessages.messageType,
+                    ChatMessages.createdAt
+                )
+                .where { ChatMessages.roomId eq roomId }
+
+            // before パラメータがあれば、その時刻より前のメッセージのみ取得
+            if (before != null) {
+                try {
+                    val beforeTime = Instant.parse(before)
+                    query = query.andWhere { ChatMessages.createdAt less beforeTime }
+                } catch (e: Exception) {
+                    throw ValidationException("INVALID_BEFORE_PARAMETER", "beforeパラメータが無効です")
+                }
+            }
+
+            // メッセージを取得（新しい順に並べて取得し、後で古い順に反転）
+            val messages = query
+                .orderBy(ChatMessages.createdAt, SortOrder.DESC)
+                .limit(validLimit + 1)
+                .map { row ->
+                    ChatMessageResponse(
+                        messageId = row[ChatMessages.messageId].toString(),
+                        roomId = row[ChatMessages.roomId],
+                        playerId = row[ChatMessages.playerId],
+                        username = row[Players.username],
+                        avatar = row[Players.avatar],
+                        message = row[ChatMessages.message],
+                        type = row[ChatMessages.messageType],
+                        createdAt = row[ChatMessages.createdAt].toString()
+                    )
+                }
+
+            // hasMore判定（limit+1件取得して、limit件を超えていたらhasMore = true）
+            val hasMore = messages.size > validLimit
+            val resultMessages = if (hasMore) messages.take(validLimit) else messages
+
+            ChatMessagesResponse(
+                messages = resultMessages.reversed(), // 古い順に並べ替え
+                hasMore = hasMore
+            )
+        }
+    }
 }

@@ -180,3 +180,37 @@ data class RoomStateResponse(
     val players: List<RoomPlayerInfo>,
     val updatedAt: String
 )
+
+/**
+ * Chat message send request DTO
+ */
+@Serializable
+data class ChatMessageRequest(
+    val playerId: String,
+    val message: String,
+    val type: String = "text" // "text" | "emoji" | "preset"
+)
+
+/**
+ * Chat message response DTO
+ */
+@Serializable
+data class ChatMessageResponse(
+    val messageId: String,
+    val roomId: String,
+    val playerId: String,
+    val username: String,
+    val avatar: String,
+    val message: String,
+    val type: String,
+    val createdAt: String
+)
+
+/**
+ * Chat messages list response DTO
+ */
+@Serializable
+data class ChatMessagesResponse(
+    val messages: List<ChatMessageResponse>,
+    val hasMore: Boolean
+)

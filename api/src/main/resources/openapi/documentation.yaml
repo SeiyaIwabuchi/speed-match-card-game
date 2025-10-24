@@ -200,6 +200,81 @@ components:
           description: "ホストかどうか"
           example: true
 
+    # チャット関連スキーマ
+    ChatMessageRequest:
+      type: object
+      required:
+        - playerId
+        - message
+      properties:
+        playerId:
+          type: string
+          description: "送信者のプレイヤーID"
+          example: "pl_1234567890"
+        message:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: "メッセージ本文（1-200文字）"
+          example: "よろしくお願いします！"
+        type:
+          type: string
+          enum: ["text", "emoji", "preset"]
+          default: "text"
+          description: "メッセージタイプ"
+          example: "text"
+
+    ChatMessageResponse:
+      type: object
+      properties:
+        messageId:
+          type: string
+          description: "メッセージID"
+          example: "12345"
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        playerId:
+          type: string
+          description: "送信者のプレイヤーID"
+          example: "pl_1234567890"
+        username:
+          type: string
+          description: "送信者のユーザー名"
+          example: "player123"
+        avatar:
+          type: string
+          description: "送信者のアバター"
+          example: "👤"
+        message:
+          type: string
+          description: "メッセージ本文"
+          example: "よろしくお願いします！"
+        type:
+          type: string
+          enum: ["text", "emoji", "preset"]
+          description: "メッセージタイプ"
+          example: "text"
+        createdAt:
+          type: string
+          format: date-time
+          description: "送信日時"
+          example: "2025-10-11T12:05:00Z"
+
+    ChatMessagesResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessageResponse"
+          description: "チャットメッセージ一覧"
+        hasMore:
+          type: boolean
+          description: "さらにメッセージが存在するか"
+          example: false
+
     GameStateResponse:
       type: object
       properties:
@@ -868,8 +943,100 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
+  # チャットAPI
+  /api/rooms/{roomId}/chat:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ルームID"
+        example: "rm_abc123"
+
+    post:
+      summary: "チャットメッセージ送信"
+      description: "ルーム内にチャットメッセージを送信します。"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageRequest"
+      responses:
+        "201":
+          description: "メッセージ送信成功"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ChatMessageResponse"
+        "400":
+          description: "バリデーションエラー"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: "ルームまたはプレイヤーが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+    get:
+      summary: "チャットメッセージ履歴取得"
+      description: "ルームのチャットメッセージ履歴を取得します。ページネーションに対応しています。"
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: "取得件数（デフォルト: 20、最大: 100）"
+        - name: before
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: "この日時より前のメッセージを取得（ISO 8601形式）"
+          example: "2025-10-11T12:00:00Z"
+      responses:
+        "200":
+          description: "チャットメッセージ履歴"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ChatMessagesResponse"
+        "400":
+          description: "バリデーションエラー"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: "ルームが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
   # ルーム管理API
   /api/rooms:
+
     post:
       summary: "ルーム作成"
       description: "新しいゲームルームを作成します"

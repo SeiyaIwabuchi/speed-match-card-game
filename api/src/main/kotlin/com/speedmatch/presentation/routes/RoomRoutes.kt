@@ -545,4 +545,149 @@ fun Route.roomRoutes() {
             )
         }
     }
+
+    /**
+     * POST /rooms/{roomId}/chat - チャットメッセージ送信
+     */
+    post("/{roomId}/chat") {
+        try {
+            val roomId = call.parameters["roomId"]
+            if (roomId.isNullOrBlank()) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiErrorResponse(
+                        error = ErrorDetails(
+                            code = "INVALID_ROOM_ID",
+                            message = "ルームIDが無効です"
+                        )
+                    )
+                )
+                return@post
+            }
+
+            logger.info("チャットメッセージ送信リクエスト: roomId=$roomId")
+
+            val request = call.receive<ChatMessageRequest>()
+            logger.debug("メッセージ: playerId=${request.playerId}, message=${request.message}, type=${request.type}")
+
+            val response = roomService.sendMessage(roomId, request)
+
+            call.respond(
+                HttpStatusCode.Created,
+                ApiResponse(
+                    success = true,
+                    data = response,
+                    message = "メッセージが正常に送信されました"
+                )
+            )
+
+            logger.info("チャットメッセージ送信成功: messageId=${response.messageId}")
+
+        } catch (e: ValidationException) {
+            logger.warn("バリデーションエラー: ${e.message ?: "Unknown error"}")
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ApiErrorResponse(
+                    error = ErrorDetails(
+                        code = e.code,
+                        message = e.message ?: "Unknown error"
+                    )
+                )
+            )
+        } catch (e: NotFoundException) {
+            logger.warn("リソースが見つかりません: ${e.message ?: "Unknown error"}")
+            call.respond(
+                HttpStatusCode.NotFound,
+                ApiErrorResponse(
+                    error = ErrorDetails(
+                        code = e.code,
+                        message = e.message ?: "Unknown error"
+                    )
+                )
+            )
+        } catch (e: Exception) {
+            logger.error("チャットメッセージ送信エラー", e)
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                ApiErrorResponse(
+                    error = ErrorDetails(
+                        code = "INTERNAL_ERROR",
+                        message = "サーバー内部エラーが発生しました"
+                    )
+                )
+            )
+        }
+    }
+
+    /**
+     * GET /rooms/{roomId}/chat - チャットメッセージ履歴取得
+     */
+    get("/{roomId}/chat") {
+        try {
+            val roomId = call.parameters["roomId"]
+            if (roomId.isNullOrBlank()) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiErrorResponse(
+                        error = ErrorDetails(
+                            code = "INVALID_ROOM_ID",
+                            message = "ルームIDが無効です"
+                        )
+                    )
+                )
+                return@get
+            }
+
+            val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 20
+            val before = call.request.queryParameters["before"]
+
+            logger.info("チャットメッセージ履歴取得リクエスト: roomId=$roomId, limit=$limit, before=$before")
+
+            val response = roomService.getMessages(roomId, limit, before)
+
+            call.respond(
+                HttpStatusCode.OK,
+                ApiResponse(
+                    success = true,
+                    data = response
+                )
+            )
+
+            logger.debug("チャットメッセージ履歴取得成功: ${response.messages.size}件")
+
+        } catch (e: ValidationException) {
+            logger.warn("バリデーションエラー: ${e.message ?: "Unknown error"}")
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ApiErrorResponse(
+                    error = ErrorDetails(
+                        code = e.code,
+                        message = e.message ?: "Unknown error"
+                    )
+                )
+            )
+        } catch (e: NotFoundException) {
+            logger.warn("リソースが見つかりません: ${e.message ?: "Unknown error"}")
+            call.respond(
+                HttpStatusCode.NotFound,
+                ApiErrorResponse(
+                    error = ErrorDetails(
+                        code = e.code,
+                        message = e.message ?: "Unknown error"
+                    )
+                )
+            )
+        } catch (e: Exception) {
+            logger.error("チャットメッセージ履歴取得エラー", e)
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                ApiErrorResponse(
+                    error = ErrorDetails(
+                        code = "INTERNAL_ERROR",
+                        message = "サーバー内部エラーが発生しました"
+                    )
+                )
+            )
+        }
+    }
 }
