@@ -84,23 +84,24 @@ class GameService {
      * @return 更新されたGameState
      */
     fun playCard(gameId: String, playerId: String, card: Card, targetField: Int): GameState {
-        return transaction {
+        val newState = transaction {
             // 現在の状態を取得
             val currentState = getGameState(gameId)
                 ?: throw IllegalStateException("ゲームが見つかりません: $gameId")
 
             // GameEngineでカードプレイ処理
-            val newState = GameEngine.playCard(currentState, playerId, card, targetField)
+            val updatedState = GameEngine.playCard(currentState, playerId, card, targetField)
 
             // データベースを更新
+            val finishedAt = Instant.now()
             Games.update({ Games.gameId eq gameId }) {
-                it[stateJson] = serializeGameState(newState)
-                it[status] = newState.status.name
-                it[currentTurnPlayerId] = if (newState.status == GameStatus.PLAYING) newState.currentPlayerId else null
-                it[deckRemaining] = newState.deckRemaining
-                it[updatedAt] = Instant.now()
-                if (newState.status == GameStatus.FINISHED) {
-                    it[finishedAt] = Instant.now()
+                it[stateJson] = serializeGameState(updatedState)
+                it[status] = updatedState.status.name
+                it[currentTurnPlayerId] = if (updatedState.status == GameStatus.PLAYING) updatedState.currentPlayerId else null
+                it[deckRemaining] = updatedState.deckRemaining
+                it[updatedAt] = finishedAt
+                if (updatedState.status == GameStatus.FINISHED) {
+                    it[Games.finishedAt] = finishedAt
                     it[winnerId] = playerId
                 }
             }
@@ -117,13 +118,30 @@ class GameService {
                 else 
                     currentState.fieldCards.second.rank
                 it[newFieldCard] = card.rank
-                it[handSizeAfter] = newState.getPlayerHand(playerId)?.size
-                it[actionData] = "{\"card\":{\"suit\":\"${card.suit.name}\",\"rank\":${card.rank}},\"targetField\":$targetField,\"deckRemaining\":${newState.deckRemaining}}"
-                it[createdAt] = Instant.now()
+                it[handSizeAfter] = updatedState.getPlayerHand(playerId)?.size
+                it[actionData] = "{\"card\":{\"suit\":\"${card.suit.name}\",\"rank\":${card.rank}},\"targetField\":$targetField,\"deckRemaining\":${updatedState.deckRemaining}}"
+                it[createdAt] = finishedAt
             }
 
-            newState
+            updatedState
         }
+        
+        // トランザクション外で統計を更新（別トランザクションで実行）
+        if (newState.status == GameStatus.FINISHED) {
+            val gameRow = transaction {
+                Games.selectAll().where { Games.gameId eq gameId }.single()
+            }
+            val startedAt = gameRow[Games.startedAt]
+            val finishedAt = gameRow[Games.finishedAt]!!
+            val playTimeSeconds = (finishedAt.epochSecond - startedAt.epochSecond)
+            
+            val ranking = newState.players.map { player ->
+                player.playerId to (player.rank ?: 99)
+            }
+            PlayerStatsService().updateGameStats(gameId, ranking, playTimeSeconds)
+        }
+        
+        return newState
     }
 
     /**
@@ -209,36 +227,55 @@ class GameService {
      * @return 更新されたGameState or null
      */
     fun checkAndFinishStalemateGame(gameId: String): GameState? {
-        return transaction {
+        val finishedState = transaction {
             val currentState = getGameState(gameId) ?: return@transaction null
 
             if (GameEngine.isStalemate(currentState)) {
-                val finishedState = GameEngine.finishGame(currentState)
+                val staleGameState = GameEngine.finishGame(currentState)
+
+                val gameRow = Games.selectAll().where { Games.gameId eq gameId }.single()
+                val startedAt = gameRow[Games.startedAt]
+                val finishedAt = Instant.now()
 
                 Games.update({ Games.gameId eq gameId }) {
-                    it[stateJson] = serializeGameState(finishedState)
-                    it[status] = finishedState.status.name
-                    it[finishedAt] = Instant.now()
-                    it[updatedAt] = Instant.now()
+                    it[stateJson] = serializeGameState(staleGameState)
+                    it[status] = staleGameState.status.name
+                    it[Games.finishedAt] = finishedAt
+                    it[updatedAt] = finishedAt
                 }
 
                 // 行き詰まり終了アクションを記録
                 GameActions.insert {
                     it[GameActions.gameId] = gameId
-                    it[playerId] = "system"
+                    it[playerId] = staleGameState.turnOrder.first()  // "system"ではなく実際のプレイヤーIDを使用
                     it[actionType] = "STALEMATE"
                     it[turnNumber] = currentState.currentPlayerIndex + 1
-                    it[actionData] = json.encodeToString(mapOf(
-                        "reason" to "all_players_cannot_play"
-                    ))
-                    it[createdAt] = Instant.now()
+                    it[actionData] = "{\"reason\":\"all_players_cannot_play\"}"
+                    it[createdAt] = finishedAt
                 }
 
-                finishedState
+                staleGameState
             } else {
                 null
             }
         }
+        
+        // トランザクション外で統計を更新（別トランザクションで実行）
+        if (finishedState != null) {
+            val gameRow = transaction {
+                Games.selectAll().where { Games.gameId eq gameId }.single()
+            }
+            val startedAt = gameRow[Games.startedAt]
+            val finishedAt = gameRow[Games.finishedAt]!!
+            val playTimeSeconds = (finishedAt.epochSecond - startedAt.epochSecond)
+            
+            val ranking = finishedState.players.map { player ->
+                player.playerId to (player.rank ?: 99)
+            }
+            PlayerStatsService().updateGameStats(gameId, ranking, playTimeSeconds)
+        }
+        
+        return finishedState
     }
 
     /**
@@ -332,5 +369,44 @@ class GameService {
             startedAt = jsonElement["startedAt"]!!.jsonPrimitive.long,
             lastUpdatedAt = jsonElement["lastUpdatedAt"]!!.jsonPrimitive.long
         )
+    }
+
+    /**
+     * ゲーム結果を取得
+     * 
+     * @param gameId ゲームID
+     * @return Pair<GameState, Map<String, Int>> (GameState, プレイヤーごとのカードプレイ数)
+     * @throws IllegalStateException ゲームが終了していない場合
+     */
+    fun getGameResult(gameId: String): Pair<GameState, Map<String, Int>> {
+        return transaction {
+            // ゲーム状態を取得
+            val gameRow = Games.selectAll().where { Games.gameId eq gameId }
+                .singleOrNull()
+                ?: throw IllegalArgumentException("Game not found: $gameId")
+            
+            val gameState = deserializeGameState(gameRow[Games.stateJson])
+            
+            // ゲームが終了していない場合はエラー
+            if (gameState.status != GameStatus.FINISHED && gameState.status != GameStatus.ABORTED) {
+                throw IllegalStateException("Game is not finished yet: $gameId (status=${gameState.status})")
+            }
+            
+            // 各プレイヤーのカードプレイ数を取得
+            val cardsPlayedMap = mutableMapOf<String, Int>()
+            gameState.players.forEach { player ->
+                val cardsPlayed = GameActions.selectAll()
+                    .where { 
+                        (GameActions.gameId eq gameId) and 
+                        (GameActions.playerId eq player.playerId) and
+                        (GameActions.actionType eq "PLAY")
+                    }
+                    .count()
+                    .toInt()
+                cardsPlayedMap[player.playerId] = cardsPlayed
+            }
+            
+            Pair(gameState, cardsPlayedMap)
+        }
     }
 }

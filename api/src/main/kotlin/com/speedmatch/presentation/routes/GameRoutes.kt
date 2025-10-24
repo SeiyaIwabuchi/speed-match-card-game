@@ -297,5 +297,91 @@ fun Route.gameRoutes() {
                 )
             }
         }
+
+        /**
+         * GET /api/v1/games/{gameId}/result - ゲーム結果取得
+         */
+        get("/{gameId}/result") {
+            try {
+                val gameId = call.parameters["gameId"]
+                    ?: throw IllegalArgumentException("ゲームIDが指定されていません")
+
+                logger.info("ゲーム結果取得リクエスト: gameId=$gameId")
+
+                val (gameState, cardsPlayedMap) = gameService.getGameResult(gameId)
+
+                // プレイヤー情報を取得してPlayerResultDTOを作成
+                val ranking = gameState.players
+                    .sortedBy { it.rank ?: 99 }
+                    .map { player ->
+                        PlayerResultDTO(
+                            playerId = player.playerId,
+                            username = player.playerId, // TODO: Players テーブルから取得
+                            rank = player.rank ?: 99,
+                            remainingCards = player.handSize,
+                            cardsPlayed = cardsPlayedMap[player.playerId] ?: 0
+                        )
+                    }
+
+                // ターン数を計算（総アクション数 / プレイヤー数）
+                val totalActions = cardsPlayedMap.values.sum()
+                val totalTurns = (totalActions.toDouble() / gameState.players.size).toInt()
+
+                val response = GameResultResponse(
+                    gameId = gameState.gameId,
+                    roomId = gameState.roomId,
+                    status = gameState.status.name,
+                    ranking = ranking,
+                    playTimeSeconds = (gameState.lastUpdatedAt - gameState.startedAt) / 1000,
+                    totalTurns = totalTurns,
+                    startedAt = gameState.startedAt,
+                    finishedAt = gameState.lastUpdatedAt
+                )
+
+                call.respond(
+                    HttpStatusCode.OK,
+                    ApiResponse(
+                        success = true,
+                        data = response
+                    )
+                )
+
+                logger.info("ゲーム結果取得成功: gameId=$gameId, status=${gameState.status}")
+
+            } catch (e: IllegalArgumentException) {
+                logger.warn("ゲーム結果取得エラー: ${e.message}")
+                call.respond(
+                    HttpStatusCode.NotFound,
+                    ApiErrorResponse(
+                        error = ErrorDetails(
+                            code = "GAME_NOT_FOUND",
+                            message = e.message ?: "ゲームが見つかりません"
+                        )
+                    )
+                )
+            } catch (e: IllegalStateException) {
+                logger.warn("ゲーム結果取得エラー: ${e.message}")
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiErrorResponse(
+                        error = ErrorDetails(
+                            code = "GAME_NOT_FINISHED",
+                            message = e.message ?: "ゲームがまだ終了していません"
+                        )
+                    )
+                )
+            } catch (e: Exception) {
+                logger.error("ゲーム結果取得エラー", e)
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ApiErrorResponse(
+                        error = ErrorDetails(
+                            code = "INTERNAL_ERROR",
+                            message = "サーバー内部エラーが発生しました"
+                        )
+                    )
+                )
+            }
+        }
     }
 }

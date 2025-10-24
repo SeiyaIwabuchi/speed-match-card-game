@@ -471,6 +471,70 @@ components:
           $ref: "#/components/schemas/GameStateResponse"
           nullable: true
 
+    PlayerResultDTO:
+      type: object
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーID"
+          example: "player_abc123"
+        username:
+          type: string
+          description: "ユーザー名"
+          example: "Player1"
+        rank:
+          type: integer
+          description: "順位（1位、2位...）"
+          example: 1
+        remainingCards:
+          type: integer
+          description: "残り手札枚数"
+          example: 0
+        cardsPlayed:
+          type: integer
+          description: "プレイしたカード枚数"
+          example: 7
+
+    GameResultResponse:
+      type: object
+      properties:
+        gameId:
+          type: string
+          description: "ゲームID"
+          example: "game_xyz789"
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        status:
+          type: string
+          enum: ["FINISHED", "ABORTED"]
+          description: "ゲームステータス"
+          example: "FINISHED"
+        ranking:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerResultDTO"
+          description: "プレイヤーランキング（順位順）"
+        playTimeSeconds:
+          type: integer
+          description: "ゲームプレイ時間（秒）"
+          example: 180
+        totalTurns:
+          type: integer
+          description: "総ターン数"
+          example: 15
+        startedAt:
+          type: integer
+          format: int64
+          description: "開始時刻（Unix timestamp ミリ秒）"
+          example: 1729843560000
+        finishedAt:
+          type: integer
+          format: int64
+          description: "終了時刻（Unix timestamp ミリ秒）"
+          example: 1729843740000
+
     # 旧GameStateResponse（互換性のため残す）
     OldGameStateResponse:
       type: object
@@ -1304,6 +1368,75 @@ paths:
                         example: false
                       data:
                         $ref: "#/components/schemas/GameActionResponse"
+
+  /api/v1/games/{gameId}/result:
+    parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ゲームID"
+        example: "game_1234567890"
+
+    get:
+      summary: "ゲーム結果取得"
+      description: "終了したゲームの結果を取得します。ランキング、プレイ時間、統計情報を含みます。"
+      responses:
+        "200":
+          description: "ゲーム結果取得成功"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/GameResultResponse"
+              example:
+                success: true
+                data:
+                  gameId: "game_1234567890"
+                  roomId: "rm_abc123"
+                  status: "FINISHED"
+                  ranking:
+                    - playerId: "player_abc123"
+                      username: "Player1"
+                      rank: 1
+                      remainingCards: 0
+                      cardsPlayed: 7
+                    - playerId: "player_def456"
+                      username: "Player2"
+                      rank: 2
+                      remainingCards: 3
+                      cardsPlayed: 4
+                  playTimeSeconds: 180
+                  totalTurns: 15
+                  startedAt: 1729843560000
+                  finishedAt: 1729843740000
+        "400":
+          description: "ゲームがまだ終了していません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              example:
+                success: false
+                error:
+                  code: "GAME_NOT_FINISHED"
+                  message: "ゲームがまだ終了していません"
+        "404":
+          description: "ゲームが見つかりません"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              example:
+                success: false
+                error:
+                  code: "GAME_NOT_FOUND"
+                  message: "ゲームが見つかりません"
 
   # チャットAPI
   /api/rooms/{roomId}/chat:
