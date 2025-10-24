@@ -7,7 +7,7 @@ import './App.css';
 // WaitingRoomPageのラッパーコンポーネント
 const WaitingRoomPageWrapper: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   const { roomId } = useParams<{ roomId: string }>();
-  return <WaitingRoomPage onNavigate={onNavigate} roomId={roomId} />;
+  return <WaitingRoomPage onNavigate={onNavigate} roomCode={roomId} />;
 };
 
 // ナビゲーション機能を持つルーターコンポーネント

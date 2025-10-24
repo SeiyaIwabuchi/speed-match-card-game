@@ -1,0 +1,55 @@
+.error-message {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.error-message__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.error-message__icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.error-message__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.error-message__code {
+  font-weight: bold;
+  color: #c33;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.error-message__message {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.error-message__close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.error-message__close:hover {
+  color: #333;
+}

@@ -1,42 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Header, Footer, Grid, GridItem, Card, Button, Input } from '../components';
-
-// モックデータ
-const mockRooms = [
-  {
-    id: '123456',
-    name: 'カジュアルルーム',
-    players: 2,
-    maxPlayers: 4,
-    isPublic: true,
-    gameSettings: {
-      handSize: 7,
-      timeLimit: 30
-    }
-  },
-  {
-    id: '789012',
-    name: 'スピード戦',
-    players: 3,
-    maxPlayers: 4,
-    isPublic: true,
-    gameSettings: {
-      handSize: 5,
-      timeLimit: 15
-    }
-  },
-  {
-    id: '345678',
-    name: 'プライベート',
-    players: 1,
-    maxPlayers: 2,
-    isPublic: false,
-    gameSettings: {
-      handSize: 10,
-      timeLimit: 60
-    }
-  }
-];
+import { useApiError } from '../hooks/useApiError';
+import { getRooms, joinRoom, getRoomByCode, type RoomListItem } from '../api';
 
 interface RoomsPageProps {
   onNavigate?: (page: string) => void;
@@ -49,6 +14,7 @@ interface RoomsPageProps {
 }
 
 const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
+  const { handleApiCall } = useApiError();
   // フィルター・検索の状態管理
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'available' | 'public' | 'private'>('all');
@@ -56,25 +22,58 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [joinRoomCode, setJoinRoomCode] = useState('');
+  const [rooms, setRooms] = useState<RoomListItem[]>([]);
+  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
+
+  useEffect(() => {
+    loadRooms();
+    // ルーム情報を定期的に更新（ポーリング）
+    const interval = setInterval(() => {
+      loadRooms();
+    }, 5000); // 5秒ごとに更新
+    setPollingInterval(interval);
+
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, []);
+
+  const loadRooms = async () => {
+    try {
+      await handleApiCall(
+        () => getRooms(),
+        (response) => {
+          setRooms(response.rooms);
+        },
+        (error) => {
+          console.error('Failed to load rooms:', error);
+        }
+      );
+    } catch (error) {
+      console.error('Failed to load rooms:', error);
+    }
+  };
 
   // フィルター・ソート済みのルーム一覧
   const filteredAndSortedRooms = useMemo(() => {
-    let filtered = mockRooms.filter(room => {
+    let filtered = rooms.filter(room => {
       // 検索フィルター
-      const matchesSearch = room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           room.id.includes(searchTerm);
+      const matchesSearch = (room.roomName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           room.roomCode.includes(searchTerm);
       
       // カテゴリフィルター
       let matchesFilter = true;
       switch (filterBy) {
         case 'available':
-          matchesFilter = room.players < room.maxPlayers;
+          matchesFilter = room.currentPlayers < room.maxPlayers;
           break;
         case 'public':
-          matchesFilter = room.isPublic;
+          matchesFilter = room.status === 'waiting'; // 公開ルームはwaiting状態
           break;
         case 'private':
-          matchesFilter = !room.isPublic;
+          matchesFilter = room.status !== 'waiting'; // プライベートは他の状態
           break;
         case 'all':
         default:
@@ -88,22 +87,41 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'players':
-          return b.players - a.players;
+          return b.currentPlayers - a.currentPlayers;
         case 'maxPlayers':
           return b.maxPlayers - a.maxPlayers;
         case 'name':
         default:
-          return a.name.localeCompare(b.name);
+          return (a.roomName || '').localeCompare(b.roomName || '');
       }
     });
 
     return filtered;
-  }, [searchTerm, filterBy, sortBy]);
+  }, [rooms, searchTerm, filterBy, sortBy]);
 
-  const handleJoinRoom = (roomId: string) => {
-    console.log(`Joining room: ${roomId}`);
-    if (onNavigate) {
-      onNavigate(`game/${roomId}`);
+  const handleJoinRoom = async (roomId: string) => {
+    if (!player) {
+      alert('プレイヤー情報が見つかりません。プロフィールページから登録してください。');
+      return;
+    }
+
+    try {
+      await handleApiCall(
+        () => joinRoom(roomId, { playerId: player.name }),
+        (result) => {
+          console.log('Joined room:', result);
+          // 待機画面に遷移（roomIdを使用）
+          if (onNavigate) {
+            onNavigate(`waiting-room/${result.roomId}`);
+          }
+        },
+        (error) => {
+          console.error('Failed to join room:', error);
+          alert(`ルームへの参加に失敗しました: ${error.message}`);
+        }
+      );
+    } catch (error) {
+      console.error('Failed to join room:', error);
     }
   };
 
@@ -116,20 +134,48 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // TODO: 実際のAPI呼び出し
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1000);
+    await loadRooms();
+    setIsRefreshing(false);
   };
 
-  const handleJoinByCode = () => {
-    if (joinRoomCode.trim()) {
-      console.log(`Joining room by code: ${joinRoomCode}`);
-      setShowJoinDialog(false);
-      setJoinRoomCode('');
-      if (onNavigate) {
-        onNavigate(`game/${joinRoomCode}`);
+  const handleJoinByCode = async () => {
+    if (!joinRoomCode.trim() || !player) {
+      if (!player) {
+        alert('プレイヤー情報が見つかりません。プロフィールページから登録してください。');
       }
+      return;
+    }
+
+    try {
+      // まずルームコードからルーム情報を取得
+      await handleApiCall(
+        () => getRoomByCode(joinRoomCode.trim()),
+        async (roomData) => {
+          // 次にルームに参加
+          await handleApiCall(
+            () => joinRoom(roomData.roomId, { playerId: player.name }),
+            (joinResult) => {
+              console.log('Joined room by code:', joinResult);
+              setShowJoinDialog(false);
+              setJoinRoomCode('');
+              // 待機画面に遷移
+              if (onNavigate) {
+                onNavigate(`waiting-room/${joinResult.roomId}`);
+              }
+            },
+            (joinError) => {
+              console.error('Failed to join room:', joinError);
+              alert(`ルームへの参加に失敗しました: ${joinError.message}`);
+            }
+          );
+        },
+        (error) => {
+          console.error('Failed to get room by code:', error);
+          alert(`ルームコードが見つかりません: ${error.message}`);
+        }
+      );
+    } catch (error) {
+      console.error('Failed to join by code:', error);
     }
   };
 
@@ -242,10 +288,10 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
 
             {/* 検索結果の表示 */}
             <div className="mt-3 text-sm text-gray-600">
-              {filteredAndSortedRooms.length === mockRooms.length ? (
-                `全 ${mockRooms.length} 件のルーム`
+              {filteredAndSortedRooms.length === rooms.length ? (
+                `全 ${rooms.length} 件のルーム`
               ) : (
-                `${filteredAndSortedRooms.length} / ${mockRooms.length} 件のルーム`
+                `${filteredAndSortedRooms.length} / ${rooms.length} 件のルーム`
               )}
               {searchTerm && (
                 <span className="ml-2">
@@ -257,15 +303,15 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
 
           <Grid className="grid--rooms" gap="lg">
             {filteredAndSortedRooms.map((room) => (
-              <GridItem key={room.id}>
+              <GridItem key={room.roomId}>
                 <Card variant="elevated" className="h-full">
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-xl font-bold mb-2">{room.name}</h3>
+                        <h3 className="text-xl font-bold mb-2">{room.roomName || '無名のルーム'}</h3>
                         <div className="flex items-center gap-2 text-sm text-secondary mb-2">
-                          <span>ルームID: {room.id}</span>
-                          {!room.isPublic && (
+                          <span>ルームID: {room.roomCode}</span>
+                          {room.status !== 'waiting' && (
                             <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">
                               プライベート
                             </span>
@@ -274,7 +320,7 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-semibold">
-                          {room.players}/{room.maxPlayers}
+                          {room.currentPlayers}/{room.maxPlayers}
                         </div>
                         <div className="text-sm text-secondary">プレイヤー</div>
                       </div>
@@ -283,8 +329,8 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
                     <div className="mb-4 p-3 bg-background-secondary rounded-lg">
                       <h4 className="font-medium mb-2">ゲーム設定</h4>
                       <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>手札: {room.gameSettings.handSize}枚</div>
-                        <div>制限時間: {room.gameSettings.timeLimit}秒</div>
+                        <div>手札: {room.initialHandSize}枚</div>
+                        <div>制限時間: {room.turnTimeLimit}秒</div>
                       </div>
                     </div>
                     
@@ -292,10 +338,10 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
                       variant="primary"
                       size="md" 
                       className="w-full"
-                      disabled={room.players >= room.maxPlayers}
-                      onClick={() => handleJoinRoom(room.id)}
+                      disabled={room.currentPlayers >= room.maxPlayers}
+                      onClick={() => handleJoinRoom(room.roomId)}
                     >
-                      {room.players >= room.maxPlayers ? '満員' : '参加する'}
+                      {room.currentPlayers >= room.maxPlayers ? '満員' : '参加する'}
                     </Button>
                   </div>
                 </Card>
@@ -305,7 +351,7 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
           
           {filteredAndSortedRooms.length === 0 && (
             <div className="text-center py-12">
-              {mockRooms.length === 0 ? (
+              {rooms.length === 0 ? (
                 <>
                   <p className="text-lg text-secondary mb-4">現在参加可能なルームがありません</p>
                   <Button variant="primary" size="lg" onClick={handleCreateRoom}>

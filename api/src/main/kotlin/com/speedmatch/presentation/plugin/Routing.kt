@@ -5,6 +5,7 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import com.speedmatch.presentation.routes.playerRoutes
+import com.speedmatch.presentation.routes.roomRoutes
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -38,6 +39,8 @@ fun Application.configureRouting() {
             get("/hello") {
                 call.respondText("Hello, SpeedMatch API!")
             }
+            playerRoutes()
+            roomRoutes()
         }
     }
 }
