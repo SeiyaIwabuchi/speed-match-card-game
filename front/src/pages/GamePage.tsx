@@ -21,6 +21,13 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
     }
   }, [gameId]);
 
+  // ゲーム終了時にリザルト画面へ遷移
+  useEffect(() => {
+    if (gameState.status === 'FINISHED' && gameState.gameId && onNavigate) {
+      onNavigate(`result/${gameState.gameId}`);
+    }
+  }, [gameState.status, gameState.gameId, onNavigate]);
+
   const handleLeaveGame = () => {
     if (onNavigate) {
       onNavigate('rooms');

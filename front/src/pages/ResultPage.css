@@ -1,0 +1,209 @@
+/* ResultPage.css */
+
+.result-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-6) var(--spacing-4);
+}
+
+/* ヘッダー */
+.result-header {
+  text-align: center;
+  margin-bottom: var(--spacing-8);
+}
+
+.result-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+.result-summary {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-8);
+  margin-top: var(--spacing-6);
+}
+
+.result-summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.result-summary-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.result-summary-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-500);
+}
+
+/* ランキング */
+.result-ranking {
+  margin-bottom: var(--spacing-8);
+}
+
+.result-ranking-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-4);
+  text-align: center;
+}
+
+.result-ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.result-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.result-ranking-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* 1位の特別スタイル */
+.result-ranking-item.rank-1 {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border: 2px solid #d4af37;
+}
+
+/* 2位の特別スタイル */
+.result-ranking-item.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+  border: 2px solid #a8a8a8;
+}
+
+/* 3位の特別スタイル */
+.result-ranking-item.rank-3 {
+  background: linear-gradient(135deg, #cd7f32 0%, #e8a87c 100%);
+  border: 2px solid #b87333;
+}
+
+.result-ranking-medal {
+  font-size: var(--font-size-3xl);
+  min-width: 60px;
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+}
+
+.result-ranking-player {
+  flex: 1;
+}
+
+.result-ranking-username {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.result-ranking-stats {
+  display: flex;
+  gap: var(--spacing-6);
+}
+
+.result-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.result-stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.result-stat-value {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+/* アクション */
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-6);
+}
+
+/* ローディング */
+.result-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.result-loading p {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+  .result-page {
+    padding: var(--spacing-4) var(--spacing-2);
+  }
+
+  .result-title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .result-summary {
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  .result-summary-value {
+    font-size: var(--font-size-xl);
+  }
+
+  .result-ranking-item {
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+  }
+
+  .result-ranking-medal {
+    font-size: var(--font-size-2xl);
+    min-width: 50px;
+  }
+
+  .result-ranking-username {
+    font-size: var(--font-size-base);
+  }
+
+  .result-ranking-stats {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .result-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .result-actions button {
+    width: 100%;
+  }
+}

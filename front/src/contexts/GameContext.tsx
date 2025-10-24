@@ -4,7 +4,8 @@ import type {
   GameStateResponse,
   PlayCardRequest,
   DrawCardRequest,
-  SkipTurnRequest
+  SkipTurnRequest,
+  GameResultResponse
 } from '../api/game';
 import * as gameApi from '../api/game';
 
@@ -42,10 +43,12 @@ export interface GameState {
 
 interface GameContextType {
   gameState: GameState;
+  gameResult: GameResultResponse | null;
   loading: boolean;
   error: string | null;
   isPlayerTurn: () => boolean;
   fetchGameState: () => Promise<void>;
+  fetchGameResult: () => Promise<void>;
   handlePlayCard: (card: CardData, targetField: number) => Promise<void>;
   handleDrawCard: () => Promise<void>;
   handleSkipTurn: () => Promise<void>;
@@ -91,6 +94,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gameResult, setGameResult] = useState<GameResultResponse | null>(null);
 
   // APIレスポンスをGameStateに変換
   const convertToGameState = (response: GameStateResponse): GameState => {
@@ -128,6 +132,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({
       setGameState(convertToGameState(response));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'ゲーム状態の取得に失敗しました';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ゲーム結果を取得
+  const fetchGameResult = async (): Promise<void> => {
+    if (!gameState.gameId) {
+      setError('ゲームIDが設定されていません');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await gameApi.getGameResult(gameState.gameId);
+      setGameResult(response);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'ゲーム結果の取得に失敗しました';
       setError(errorMessage);
       throw err;
     } finally {
@@ -256,10 +281,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({
 
   const contextValue: GameContextType = {
     gameState,
+    gameResult,
     loading,
     error,
     isPlayerTurn,
     fetchGameState,
+    fetchGameResult,
     handlePlayCard,
     handleDrawCard,
     handleSkipTurn,

@@ -95,6 +95,31 @@ export interface GameActionResponse {
 }
 
 /**
+ * プレイヤー結果DTO
+ */
+export interface PlayerResultDTO {
+  playerId: string;
+  username: string;
+  rank: number; // 順位 (1位、2位...)
+  remainingCards: number; // 残り手札枚数
+  cardsPlayed: number; // プレイしたカード枚数
+}
+
+/**
+ * ゲーム結果レスポンス
+ */
+export interface GameResultResponse {
+  gameId: string;
+  roomId: string;
+  status: 'FINISHED' | 'ABORTED';
+  ranking: PlayerResultDTO[]; // プレイヤーランキング（順位順）
+  playTimeSeconds: number; // ゲームプレイ時間（秒）
+  totalTurns: number; // 総ターン数
+  startedAt: number; // 開始時刻（Unix timestamp ミリ秒）
+  finishedAt: number; // 終了時刻（Unix timestamp ミリ秒）
+}
+
+/**
  * ゲームを作成
  * POST /api/v1/games
  */
@@ -160,6 +185,17 @@ export const skipTurn = async (
   const response = await apiClient.post<ApiResponse<GameActionResponse>>(
     `/games/${gameId}/actions/skip`,
     request
+  );
+  return response.data.data!;
+};
+
+/**
+ * ゲーム結果を取得
+ * GET /api/v1/games/:gameId/result
+ */
+export const getGameResult = async (gameId: string): Promise<GameResultResponse> => {
+  const response = await apiClient.get<ApiResponse<GameResultResponse>>(
+    `/games/${gameId}/result`
   );
   return response.data.data!;
 };

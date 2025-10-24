@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { PlayerProvider, usePlayer, RoomProvider } from './contexts';
-import { HomePage, RoomsPage, ProfilePage, GamePage, PlayerRegistrationPage, CreateRoomPage, WaitingRoomPage } from './pages';
+import { HomePage, RoomsPage, ProfilePage, GamePage, PlayerRegistrationPage, CreateRoomPage, WaitingRoomPage, ResultPage } from './pages';
 import './App.css';
 
 // WaitingRoomPageのラッパーコンポーネント
@@ -47,6 +47,9 @@ const AppRoutes: React.FC = () => {
         } else if (page.startsWith('waiting-room/')) {
           const roomId = page.split('/')[1];
           navigate(`/waiting-room/${roomId}`);
+        } else if (page.startsWith('result/')) {
+          const gameId = page.split('/')[1];
+          navigate(`/result/${gameId}`);
         }
         break;
     }
@@ -116,7 +119,14 @@ const AppRoutes: React.FC = () => {
         element={
           <GamePage 
             onNavigate={handleNavigate}
-            player={player}
+          />
+        } 
+      />
+      <Route 
+        path="/result/:gameId" 
+        element={
+          <ResultPage 
+            onNavigate={handleNavigate}
           />
         } 
       />
