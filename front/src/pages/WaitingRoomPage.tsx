@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Container, Header, Footer, Card, Button, Grid, GridItem } from '../components';
+import { Container, Header, Footer, Card, Button, Grid, GridItem, ChatBox } from '../components';
 import { PlayerContext } from '../contexts';
 import { useApiError } from '../hooks/useApiError';
-import { getRoom, leaveRoom, setReady, startGame } from '../api';
+import { getRoom, getRoomByCode, leaveRoom, setReady, startGame, sendChatMessage, getChatMessages } from '../api/room';
+import type { ChatMessage } from '../api/chat';
 
 interface WaitingRoomPageProps {
   onNavigate?: (path: string) => void;
@@ -40,6 +41,55 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<number | null>(null);
+  const [useMockData, setUseMockData] = useState(false);
+  
+  // チャット機能
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [chatPollingInterval, setChatPollingInterval] = useState<number | null>(null);
+
+  // チャットメッセージを読み込む
+  const loadChatMessages = async () => {
+    if (!room) return;
+
+    try {
+      const response = await getChatMessages(room.roomId, 50);
+      // ChatMessageResponse から ChatMessage に変換
+      const messages: ChatMessage[] = response.messages.map(msg => ({
+        id: msg.messageId,
+        roomId: msg.roomId,
+        playerId: msg.playerId,
+        playerName: msg.username,
+        playerAvatar: msg.avatar,
+        message: msg.message,
+        createdAt: msg.createdAt
+      }));
+      setChatMessages(messages);
+      setChatError(null);
+    } catch (error) {
+      console.error('Failed to load chat messages:', error);
+      setChatError('メッセージの読み込みに失敗しました');
+    }
+  };
+
+  // チャットメッセージのポーリング
+  useEffect(() => {
+    if (room) {
+      loadChatMessages();
+      
+      // 3秒ごとにチャットメッセージを取得
+      const interval = setInterval(() => {
+        loadChatMessages();
+      }, 3000);
+      setChatPollingInterval(interval);
+    }
+
+    return () => {
+      if (chatPollingInterval) {
+        clearInterval(chatPollingInterval);
+      }
+    };
+  }, [room]);
 
   useEffect(() => {
     if (roomCode) {
@@ -62,24 +112,46 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
     if (!roomCode || !player) return;
 
     try {
-      await handleApiCall(
-        () => getRoom(roomCode),
-        (roomData) => {
-          setRoom(roomData);
-          
-          // 現在のプレイヤーの準備状態を確認
-          const currentParticipant = roomData.players.find((p: Participant) => p.playerId === player.name);
-          if (currentParticipant) {
-            setIsReady(currentParticipant.isReady);
-          }
-        },
-        (error) => {
-          console.error('Failed to load room data:', error);
-          // エラーハンドリングはhandleApiCall内で処理される
-        }
-      );
+      // まずroomCodeからroomIdを取得
+      const roomCodeResponse = await getRoomByCode(roomCode);
+      const roomId = roomCodeResponse.roomId;
+      
+      // roomIdで詳細情報を取得
+      const roomData = await getRoom(roomId);
+      setRoom(roomData);
+      
+      // 現在のプレイヤーの準備状態を確認
+      const currentParticipant = roomData.players.find((p: Participant) => p.playerId === player.name);
+      if (currentParticipant) {
+        setIsReady(currentParticipant.isReady);
+      }
     } catch (error) {
       console.error('Failed to load room data:', error);
+      // エラー時はモックデータを使用（初回のみ）
+      if (!useMockData) {
+        const mockRoom: Room = {
+          roomId: 'mock-room-id',
+          roomCode: roomCode,
+          roomName: 'TestRoom',
+          hostId: player.name,
+          maxPlayers: 4,
+          currentPlayers: 1,
+          initialHandSize: 7,
+          turnTimeLimit: 30,
+          isPublic: true,
+          status: 'waiting',
+          players: [{
+            playerId: player.name,
+            username: player.name,
+            avatar: player.avatar || '?',
+            isReady: false,
+            isHost: true
+          }],
+          createdAt: new Date().toISOString()
+        };
+        setRoom(mockRoom);
+        setUseMockData(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -182,6 +254,26 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
       );
     } catch (error) {
       console.error('Failed to start game:', error);
+    }
+  };
+
+  // チャットメッセージ送信
+  const handleSendMessage = async (message: string): Promise<void> => {
+    if (!player || !room || !player.id) return;
+
+    try {
+      await sendChatMessage(room.roomId, {
+        playerId: player.id,
+        message,
+        type: 'text'
+      });
+
+      // 送信後すぐにメッセージを再取得
+      await loadChatMessages();
+      setChatError(null);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setChatError('メッセージの送信に失敗しました');
     }
   };
 
@@ -350,6 +442,18 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
                   </GridItem>
                 ))}
               </Grid>
+            </Card>
+
+            {/* チャット */}
+            <Card variant="elevated" className="p-6">
+              <h3 className="text-lg font-bold mb-4">チャット</h3>
+              <ChatBox
+                messages={chatMessages}
+                currentPlayerId={player?.name || ''}
+                onSendMessage={handleSendMessage}
+                error={chatError}
+                maxHeight="300px"
+              />
             </Card>
 
             {/* アクションボタン */}

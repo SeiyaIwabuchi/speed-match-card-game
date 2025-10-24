@@ -9,3 +9,6 @@ export { Input, Textarea } from './Input';
 export type { InputProps, TextareaProps } from './Input';
 
 export { ErrorMessage } from './ErrorMessage';
+
+export { default as ChatBox } from './ChatBox';
+export type { ChatBoxProps } from './ChatBox';

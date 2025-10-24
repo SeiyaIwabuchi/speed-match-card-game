@@ -15,6 +15,13 @@ export interface Player {
   isReady: boolean;
 }
 
+export interface GameStats {
+  totalTurns: number;
+  playTime: number; // 秒単位
+  playerActions: { [playerId: string]: number };
+  gameStartTime: number | null;
+}
+
 export interface GameState {
   roomId: string;
   players: Player[];
@@ -25,6 +32,7 @@ export interface GameState {
   timeLeft: number;
   winner: Player | null;
   gameHistory: CardData[];
+  stats: GameStats;
 }
 
 interface GameContextType {
@@ -78,27 +86,50 @@ export const GameProvider: React.FC<GameProviderProps> = ({
       gamePhase: 'playing',
       timeLeft: 30,
       winner: null,
-      gameHistory: []
+      gameHistory: [],
+      stats: {
+        totalTurns: 0,
+        playTime: 0,
+        playerActions: {
+          [playerId]: 0,
+          'player2': 0,
+          'player3': 0
+        },
+        gameStartTime: Date.now()
+      }
     };
   });
 
-  // タイマー管理
+  // タイマー管理とプレイ時間計測
   useEffect(() => {
     if (gameState.gamePhase !== 'playing') return;
     
     const timer = setInterval(() => {
       setGameState(prev => {
+        const newPlayTime = prev.stats.gameStartTime 
+          ? Math.floor((Date.now() - prev.stats.gameStartTime) / 1000)
+          : prev.stats.playTime;
+
         if (prev.timeLeft <= 1) {
           // 時間切れ - 次のプレイヤーのターン
           return {
             ...prev,
             currentPlayerIndex: (prev.currentPlayerIndex + 1) % prev.players.length,
-            timeLeft: 30
+            timeLeft: 30,
+            stats: {
+              ...prev.stats,
+              playTime: newPlayTime,
+              totalTurns: prev.stats.totalTurns + 1
+            }
           };
         }
         return {
           ...prev,
-          timeLeft: prev.timeLeft - 1
+          timeLeft: prev.timeLeft - 1,
+          stats: {
+            ...prev.stats,
+            playTime: newPlayTime
+          }
         };
       });
     }, 1000);
@@ -130,6 +161,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({
         ? prev.players.find(p => p.id === playerId) || null
         : null;
 
+      // 統計情報を更新
+      const newPlayerActions = {
+        ...prev.stats.playerActions,
+        [playerId]: (prev.stats.playerActions[playerId] || 0) + 1
+      };
+
+      const playTime = prev.stats.gameStartTime 
+        ? Math.floor((Date.now() - prev.stats.gameStartTime) / 1000)
+        : prev.stats.playTime;
+
       return {
         ...prev,
         centerCard: card,
@@ -139,7 +180,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({
         timeLeft: 30,
         gameHistory: [...prev.gameHistory, card],
         winner,
-        gamePhase: winner ? 'finished' : 'playing'
+        gamePhase: winner ? 'finished' : 'playing',
+        stats: {
+          ...prev.stats,
+          totalTurns: prev.stats.totalTurns + 1,
+          playerActions: newPlayerActions,
+          playTime
+        }
       };
     });
   };
@@ -155,7 +202,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({
     setGameState(prev => ({
       ...prev,
       gamePhase: 'playing',
-      timeLeft: 30
+      timeLeft: 30,
+      stats: {
+        totalTurns: 0,
+        playTime: 0,
+        playerActions: Object.keys(prev.stats.playerActions).reduce((acc, key) => ({
+          ...acc,
+          [key]: 0
+        }), {}),
+        gameStartTime: Date.now()
+      }
     }));
   };
 
@@ -175,7 +231,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({
         { id: 'hand-new-4', number: 3, suit: 'diamonds' },
         { id: 'hand-new-5', number: 9, suit: 'hearts' },
       ],
-      players: prev.players.map(p => ({ ...p, handSize: 5 }))
+      players: prev.players.map(p => ({ ...p, handSize: 5 })),
+      stats: {
+        totalTurns: 0,
+        playTime: 0,
+        playerActions: Object.keys(prev.stats.playerActions).reduce((acc, key) => ({
+          ...acc,
+          [key]: 0
+        }), {}),
+        gameStartTime: null
+      }
     }));
   };
 

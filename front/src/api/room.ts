@@ -105,6 +105,29 @@ export interface RoomStartResponse {
   startedAt: string;
 }
 
+// チャット関連の型定義
+export interface ChatMessageRequest {
+  playerId: string;
+  message: string;
+  type?: string; // "text" | "emoji" | "preset"
+}
+
+export interface ChatMessageResponse {
+  messageId: string;
+  roomId: string;
+  playerId: string;
+  username: string;
+  avatar: string;
+  message: string;
+  type: string;
+  createdAt: string;
+}
+
+export interface ChatMessagesResponse {
+  messages: ChatMessageResponse[];
+  hasMore: boolean;
+}
+
 // ルーム作成API
 export const createRoom = async (request: RoomCreateRequest): Promise<RoomResponse> => {
   const response = await apiClient.post<ApiResponse<RoomResponse>>('/rooms', request);
@@ -164,5 +187,28 @@ export const setReady = async (roomId: string, request: RoomReadyRequest): Promi
 // ゲーム開始API
 export const startGame = async (roomId: string, request: RoomStartRequest): Promise<RoomStartResponse> => {
   const response = await apiClient.post<ApiResponse<RoomStartResponse>>(`/rooms/${roomId}/start`, request);
+  return response.data.data!;
+};
+
+// チャットメッセージ送信API
+export const sendChatMessage = async (roomId: string, request: ChatMessageRequest): Promise<ChatMessageResponse> => {
+  const response = await apiClient.post<ApiResponse<ChatMessageResponse>>(`/rooms/${roomId}/chat`, request);
+  return response.data.data!;
+};
+
+// チャットメッセージ履歴取得API
+export const getChatMessages = async (
+  roomId: string,
+  limit?: number,
+  before?: string
+): Promise<ChatMessagesResponse> => {
+  const params = new URLSearchParams();
+  if (limit) params.append('limit', limit.toString());
+  if (before) params.append('before', before);
+
+  const queryString = params.toString();
+  const url = queryString ? `/rooms/${roomId}/chat?${queryString}` : `/rooms/${roomId}/chat`;
+
+  const response = await apiClient.get<ApiResponse<ChatMessagesResponse>>(url);
   return response.data.data!;
 };
