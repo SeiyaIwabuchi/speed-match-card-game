@@ -87,7 +87,11 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate, player }) => {
                 </CardHeader>
                 <CardBody>
                   <p className="mb-4">新しいゲームルームを作成して友達を招待しよう</p>
-                  <Button variant="primary" fullWidth>
+                  <Button 
+                    variant="primary" 
+                    fullWidth
+                    onClick={() => onNavigate && onNavigate('create-room')}
+                  >
                     ルーム作成
                   </Button>
                 </CardBody>
@@ -99,7 +103,11 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate, player }) => {
                 </CardHeader>
                 <CardBody>
                   <p className="mb-4">ルームコードを入力して既存のゲームに参加しよう</p>
-                  <Button variant="secondary" fullWidth>
+                  <Button 
+                    variant="secondary" 
+                    fullWidth
+                    onClick={() => onNavigate && onNavigate('rooms')}
+                  >
                     ルーム参加
                   </Button>
                 </CardBody>
@@ -111,7 +119,11 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate, player }) => {
                 </CardHeader>
                 <CardBody>
                   <p className="mb-4">公開されているルームを探してゲームに参加しよう</p>
-                  <Button variant="outline" fullWidth>
+                  <Button 
+                    variant="outline" 
+                    fullWidth
+                    onClick={() => onNavigate && onNavigate('rooms')}
+                  >
                     ルーム一覧
                   </Button>
                 </CardBody>
