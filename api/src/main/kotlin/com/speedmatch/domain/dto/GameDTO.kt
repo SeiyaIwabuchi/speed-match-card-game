@@ -63,6 +63,15 @@ data class PlayerStateDTO(
 }
 
 /**
+ * 場札DTO
+ */
+@Serializable
+data class FieldCardsDTO(
+    val first: CardDTO,
+    val second: CardDTO
+)
+
+/**
  * ゲーム状態レスポンス
  */
 @Serializable
@@ -70,7 +79,7 @@ data class GameStateResponse(
     val gameId: String,
     val roomId: String,
     val players: List<PlayerStateDTO>,
-    val fieldCards: Pair<CardDTO, CardDTO>,
+    val fieldCards: FieldCardsDTO,
     val currentPlayerId: String,
     val currentPlayerIndex: Int,
     val deckRemaining: Int,
@@ -92,9 +101,9 @@ data class GameStateResponse(
                         includeHand = player.playerId == requestingPlayerId
                     )
                 },
-                fieldCards = Pair(
-                    CardDTO.fromDomain(gameState.fieldCards.first),
-                    CardDTO.fromDomain(gameState.fieldCards.second)
+                fieldCards = FieldCardsDTO(
+                    first = CardDTO.fromDomain(gameState.fieldCards.first),
+                    second = CardDTO.fromDomain(gameState.fieldCards.second)
                 ),
                 currentPlayerId = gameState.currentPlayerId,
                 currentPlayerIndex = gameState.currentPlayerIndex,

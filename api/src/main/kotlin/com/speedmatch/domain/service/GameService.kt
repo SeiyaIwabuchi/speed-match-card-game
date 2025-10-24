@@ -5,8 +5,7 @@ import com.speedmatch.domain.game.*
 import com.speedmatch.infrastructure.database.GameActions
 import com.speedmatch.infrastructure.database.Games
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Instant
@@ -44,16 +43,14 @@ class GameService {
                 it[updatedAt] = Instant.now()
             }
 
-            // 初期化アクションを記録
+            // 初期化アクションを記録（player_idは最初のプレイヤーを使用）
             GameActions.insert {
                 it[GameActions.gameId] = gameState.gameId
-                it[playerId] = "system"
+                it[playerId] = playerIds.first()  // "system"ではなく実際のplayer_idを使用
                 it[actionType] = "INIT"
                 it[turnNumber] = 0
-                it[actionData] = json.encodeToString(mapOf(
-                    "playerIds" to playerIds,
-                    "deckSize" to 52
-                ))
+                val playerIdsJson = playerIds.joinToString(",") { "\"$it\"" }
+                it[actionData] = "{\"playerIds\":[$playerIdsJson],\"deckSize\":52}"
                 it[createdAt] = Instant.now()
             }
         }
@@ -121,10 +118,7 @@ class GameService {
                     currentState.fieldCards.second.rank
                 it[newFieldCard] = card.rank
                 it[handSizeAfter] = newState.getPlayerHand(playerId)?.size
-                it[actionData] = json.encodeToString(mapOf(
-                    "card" to CardDTO.fromDomain(card),
-                    "targetField" to targetField
-                ))
+                it[actionData] = "{\"card\":{\"suit\":\"${card.suit.name}\",\"rank\":${card.rank}},\"targetField\":$targetField,\"deckRemaining\":${newState.deckRemaining}}"
                 it[createdAt] = Instant.now()
             }
 
@@ -163,9 +157,7 @@ class GameService {
                 it[actionType] = "DRAW"
                 it[turnNumber] = currentState.currentPlayerIndex + 1
                 it[handSizeAfter] = newState.getPlayerHand(playerId)?.size
-                it[actionData] = json.encodeToString(mapOf(
-                    "deckRemaining" to newState.deckRemaining
-                ))
+                it[actionData] = "{\"deckRemaining\":${newState.deckRemaining}}"
                 it[createdAt] = Instant.now()
             }
 
@@ -202,9 +194,7 @@ class GameService {
                 it[GameActions.playerId] = playerId
                 it[actionType] = "SKIP"
                 it[turnNumber] = currentState.currentPlayerIndex + 1
-                it[actionData] = json.encodeToString(mapOf(
-                    "reason" to "no_playable_cards_and_empty_deck"
-                ))
+                it[actionData] = "{\"reason\":\"no_playable_cards_and_empty_deck\"}"
                 it[createdAt] = Instant.now()
             }
 
@@ -255,89 +245,92 @@ class GameService {
      * GameStateをJSON文字列にシリアライズ
      */
     private fun serializeGameState(gameState: GameState): String {
-        // GameStateを直接シリアライズできないため、手動でマップに変換
-        val stateMap = mapOf(
-            "gameId" to gameState.gameId,
-            "roomId" to gameState.roomId,
-            "players" to gameState.players.map { player ->
-                mapOf(
-                    "playerId" to player.playerId,
-                    "hand" to player.hand.map { mapOf("suit" to it.suit.name, "rank" to it.rank) },
-                    "rank" to player.rank
-                )
+        // 手動でJSON文字列を構築（Kotlinx Serializationの制限を回避）
+        val playersJson = gameState.players.joinToString(",") { player ->
+            val handJson = player.hand.joinToString(",") { card ->
+                """{"suit":"${card.suit.name}","rank":${card.rank}}"""
+            }
+            val rankJson = player.rank?.let { """"rank":$it""" } ?: """"rank":null"""
+            """{"playerId":"${player.playerId}","hand":[$handJson],$rankJson}"""
+        }
+        
+        val deckJson = gameState.deck.joinToString(",") { card ->
+            """{"suit":"${card.suit.name}","rank":${card.rank}}"""
+        }
+        
+        val turnOrderJson = gameState.turnOrder.joinToString(",") { """"$it"""" }
+        
+        return """{
+            "gameId":"${gameState.gameId}",
+            "roomId":"${gameState.roomId}",
+            "players":[$playersJson],
+            "deck":[$deckJson],
+            "fieldCards":{
+                "first":{"suit":"${gameState.fieldCards.first.suit.name}","rank":${gameState.fieldCards.first.rank}},
+                "second":{"suit":"${gameState.fieldCards.second.suit.name}","rank":${gameState.fieldCards.second.rank}}
             },
-            "deck" to gameState.deck.map { mapOf("suit" to it.suit.name, "rank" to it.rank) },
-            "fieldCards" to mapOf(
-                "first" to mapOf("suit" to gameState.fieldCards.first.suit.name, "rank" to gameState.fieldCards.first.rank),
-                "second" to mapOf("suit" to gameState.fieldCards.second.suit.name, "rank" to gameState.fieldCards.second.rank)
-            ),
-            "currentPlayerIndex" to gameState.currentPlayerIndex,
-            "turnOrder" to gameState.turnOrder,
-            "status" to gameState.status.name,
-            "startedAt" to gameState.startedAt,
-            "lastUpdatedAt" to gameState.lastUpdatedAt
-        )
-        return json.encodeToString(stateMap)
+            "currentPlayerIndex":${gameState.currentPlayerIndex},
+            "turnOrder":[$turnOrderJson],
+            "status":"${gameState.status.name}",
+            "startedAt":${gameState.startedAt},
+            "lastUpdatedAt":${gameState.lastUpdatedAt}
+        }""".replace("\n", "").replace(" ", "")
     }
 
     /**
      * JSON文字列からGameStateをデシリアライズ
      */
     private fun deserializeGameState(stateJson: String): GameState {
-        val stateMap = json.decodeFromString<Map<String, Any>>(stateJson)
+        val jsonElement = json.parseToJsonElement(stateJson).jsonObject
         
-        @Suppress("UNCHECKED_CAST")
-        val playersData = stateMap["players"] as List<Map<String, Any>>
-        @Suppress("UNCHECKED_CAST")
-        val deckData = stateMap["deck"] as List<Map<String, Any>>
-        @Suppress("UNCHECKED_CAST")
-        val fieldCardsData = stateMap["fieldCards"] as Map<String, Map<String, Any>>
-        @Suppress("UNCHECKED_CAST")
-        val turnOrder = stateMap["turnOrder"] as List<String>
+        val playersData = jsonElement["players"]!!.jsonArray
+        val deckData = jsonElement["deck"]!!.jsonArray
+        val fieldCardsData = jsonElement["fieldCards"]!!.jsonObject
+        val turnOrder = jsonElement["turnOrder"]!!.jsonArray.map { it.jsonPrimitive.content }
         
-        val players = playersData.map { playerMap ->
-            @Suppress("UNCHECKED_CAST")
-            val handData = playerMap["hand"] as List<Map<String, Any>>
+        val players = playersData.map { playerElement ->
+            val playerMap = playerElement.jsonObject
+            val handData = playerMap["hand"]!!.jsonArray
             PlayerState(
-                playerId = playerMap["playerId"] as String,
-                hand = handData.map { cardMap ->
+                playerId = playerMap["playerId"]!!.jsonPrimitive.content,
+                hand = handData.map { cardElement ->
+                    val cardMap = cardElement.jsonObject
                     Card(
-                        Suit.valueOf(cardMap["suit"] as String),
-                        (cardMap["rank"] as Double).toInt()
+                        Suit.valueOf(cardMap["suit"]!!.jsonPrimitive.content),
+                        cardMap["rank"]!!.jsonPrimitive.int
                     )
                 },
-                rank = (playerMap["rank"] as? Double)?.toInt()
+                rank = playerMap["rank"]?.jsonPrimitive?.intOrNull
             )
         }
         
-        val deck = deckData.map { cardMap ->
+        val deck = deckData.map { cardElement ->
+            val cardMap = cardElement.jsonObject
             Card(
-                Suit.valueOf(cardMap["suit"] as String),
-                (cardMap["rank"] as Double).toInt()
+                Suit.valueOf(cardMap["suit"]!!.jsonPrimitive.content),
+                cardMap["rank"]!!.jsonPrimitive.int
             )
         }
         
-        @Suppress("UNCHECKED_CAST")
-        val firstFieldData = fieldCardsData["first"] as Map<String, Any>
-        @Suppress("UNCHECKED_CAST")
-        val secondFieldData = fieldCardsData["second"] as Map<String, Any>
+        val firstFieldData = fieldCardsData["first"]!!.jsonObject
+        val secondFieldData = fieldCardsData["second"]!!.jsonObject
         
         val fieldCards = Pair(
-            Card(Suit.valueOf(firstFieldData["suit"] as String), (firstFieldData["rank"] as Double).toInt()),
-            Card(Suit.valueOf(secondFieldData["suit"] as String), (secondFieldData["rank"] as Double).toInt())
+            Card(Suit.valueOf(firstFieldData["suit"]!!.jsonPrimitive.content), firstFieldData["rank"]!!.jsonPrimitive.int),
+            Card(Suit.valueOf(secondFieldData["suit"]!!.jsonPrimitive.content), secondFieldData["rank"]!!.jsonPrimitive.int)
         )
         
         return GameState(
-            gameId = stateMap["gameId"] as String,
-            roomId = stateMap["roomId"] as String,
+            gameId = jsonElement["gameId"]!!.jsonPrimitive.content,
+            roomId = jsonElement["roomId"]!!.jsonPrimitive.content,
             players = players,
             deck = deck,
             fieldCards = fieldCards,
-            currentPlayerIndex = (stateMap["currentPlayerIndex"] as Double).toInt(),
+            currentPlayerIndex = jsonElement["currentPlayerIndex"]!!.jsonPrimitive.int,
             turnOrder = turnOrder,
-            status = GameStatus.valueOf(stateMap["status"] as String),
-            startedAt = (stateMap["startedAt"] as Double).toLong(),
-            lastUpdatedAt = (stateMap["lastUpdatedAt"] as Double).toLong()
+            status = GameStatus.valueOf(jsonElement["status"]!!.jsonPrimitive.content),
+            startedAt = jsonElement["startedAt"]!!.jsonPrimitive.long,
+            lastUpdatedAt = jsonElement["lastUpdatedAt"]!!.jsonPrimitive.long
         )
     }
 }

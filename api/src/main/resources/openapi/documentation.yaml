@@ -275,7 +275,204 @@ components:
           description: "さらにメッセージが存在するか"
           example: false
 
+    # Phase 14 ゲームAPI関連スキーマ
+    CreateGameRequest:
+      type: object
+      required:
+        - roomId
+        - playerIds
+      properties:
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        playerIds:
+          type: array
+          items:
+            type: string
+          minItems: 2
+          maxItems: 4
+          description: "プレイヤーIDリスト（2-4人）"
+          example: ["pl_test_001", "pl_test_002"]
+
+    CreateGameResponse:
+      type: object
+      properties:
+        gameId:
+          type: string
+          description: "作成されたゲームID"
+          example: "game_1234567890"
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        status:
+          type: string
+          description: "ゲームステータス"
+          example: "PLAYING"
+        message:
+          type: string
+          description: "成功メッセージ"
+          example: "ゲームが作成されました"
+
+    CardDTO:
+      type: object
+      required:
+        - suit
+        - rank
+      properties:
+        suit:
+          type: string
+          enum: ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
+          description: "カードのスート"
+          example: "SPADES"
+        rank:
+          type: integer
+          minimum: 1
+          maximum: 13
+          description: "カードのランク（1=A, 11=J, 12=Q, 13=K）"
+          example: 5
+
+    PlayerStateDTO:
+      type: object
+      required:
+        - playerId
+        - handSize
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーID"
+          example: "pl_test_001"
+        handSize:
+          type: integer
+          description: "手札の枚数"
+          example: 7
+        hand:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardDTO"
+          description: "手札（自分のみ表示）"
+          nullable: true
+        rank:
+          type: integer
+          description: "ランク（ゲーム終了時）"
+          nullable: true
+          example: 1
+
     GameStateResponse:
+      type: object
+      properties:
+        gameId:
+          type: string
+          description: "ゲームID"
+          example: "game_1234567890"
+        roomId:
+          type: string
+          description: "ルームID"
+          example: "rm_abc123"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerStateDTO"
+          description: "ゲーム内のプレイヤー一覧"
+        fieldCards:
+          type: object
+          properties:
+            first:
+              $ref: "#/components/schemas/CardDTO"
+            second:
+              $ref: "#/components/schemas/CardDTO"
+          description: "場札（2枚）"
+        currentPlayerId:
+          type: string
+          description: "現在のターンのプレイヤーID"
+          example: "pl_test_001"
+        currentPlayerIndex:
+          type: integer
+          description: "現在のターンのプレイヤーインデックス"
+          example: 0
+        deckRemaining:
+          type: integer
+          description: "山札の残り枚数"
+          example: 36
+        status:
+          type: string
+          enum: ["PLAYING", "FINISHED", "ABORTED"]
+          description: "ゲームステータス"
+          example: "PLAYING"
+        playableCards:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardDTO"
+          description: "プレイ可能なカード（自分のターンの場合のみ）"
+          nullable: true
+        startedAt:
+          type: integer
+          format: int64
+          description: "ゲーム開始時刻（Unix timestamp）"
+          example: 1729769400000
+        lastUpdatedAt:
+          type: integer
+          format: int64
+          description: "最終更新時刻（Unix timestamp）"
+          example: 1729769450000
+
+    PlayCardRequest:
+      type: object
+      required:
+        - playerId
+        - card
+        - targetField
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーID"
+          example: "pl_test_001"
+        card:
+          $ref: "#/components/schemas/CardDTO"
+        targetField:
+          type: integer
+          enum: [0, 1]
+          description: "どちらの場札に出すか（0 or 1）"
+          example: 0
+
+    DrawCardRequest:
+      type: object
+      required:
+        - playerId
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーID"
+          example: "pl_test_001"
+
+    SkipTurnRequest:
+      type: object
+      required:
+        - playerId
+      properties:
+        playerId:
+          type: string
+          description: "プレイヤーID"
+          example: "pl_test_001"
+
+    GameActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: "アクション成功"
+          example: true
+        message:
+          type: string
+          description: "アクションメッセージ"
+          example: "カードをプレイしました"
+        gameState:
+          $ref: "#/components/schemas/GameStateResponse"
+          nullable: true
+
+    # 旧GameStateResponse（互換性のため残す）
+    OldGameStateResponse:
       type: object
       properties:
         gameId:
@@ -895,7 +1092,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
-  /api/games/{gameId}/state:
+  # Phase 14 ゲームAPI
+  /api/v1/games:
+    post:
+      summary: "ゲーム作成"
+      description: "新しいゲームを作成し、初期状態を設定します。デッキをシャッフルし、各プレイヤーに7枚ずつ配り、場札を2枚設定します。"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGameRequest"
+      responses:
+        "201":
+          description: "ゲーム作成成功"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/CreateGameResponse"
+        "400":
+          description: "バリデーションエラー"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+
+  /api/v1/games/{gameId}/state:
     parameters:
       - name: gameId
         in: path
@@ -903,28 +1130,21 @@ paths:
         schema:
           type: string
         description: "ゲームID"
-        example: "gm_xyz789"
+        example: "game_1234567890"
+      - name: playerId
+        in: query
+        required: false
+        schema:
+          type: string
+        description: "プレイヤーID（指定すると自分の手札が表示される）"
+        example: "pl_test_001"
 
     get:
-      summary: "ゲーム状態取得（ポーリング用）"
-      description: "ゲームの現在の状態を取得します。If-Modified-Sinceヘッダーを使用して効率的なポーリングを実現します。"
-      parameters:
-        - name: If-Modified-Since
-          in: header
-          required: false
-          schema:
-            type: string
-            format: date-time
-          description: "前回取得時のLast-Modified値"
+      summary: "ゲーム状態取得"
+      description: "ゲームの現在の状態を取得します。playerIdを指定すると、そのプレイヤーの手札とプレイ可能カードが含まれます。"
       responses:
         "200":
           description: "ゲーム状態情報"
-          headers:
-            Last-Modified:
-              description: "ゲームの最終更新時刻"
-              schema:
-                type: string
-                format: date-time
           content:
             application/json:
               schema:
@@ -934,14 +1154,156 @@ paths:
                     properties:
                       data:
                         $ref: "#/components/schemas/GameStateResponse"
-        "304":
-          description: "変更なし（Not Modified）"
+        "400":
+          description: "バリデーションエラー"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
         "404":
           description: "ゲームが見つかりません"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+
+  /api/v1/games/{gameId}/actions/play:
+    parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ゲームID"
+        example: "game_1234567890"
+
+    post:
+      summary: "カードプレイ"
+      description: "カードを場に出します。同じスートまたはランク±1のカードのみプレイ可能です。"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayCardRequest"
+      responses:
+        "200":
+          description: "カードプレイ成功"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/GameActionResponse"
+        "400":
+          description: "不正なカードプレイ"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: false
+                      data:
+                        $ref: "#/components/schemas/GameActionResponse"
+
+  /api/v1/games/{gameId}/actions/draw:
+    parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ゲームID"
+        example: "game_1234567890"
+
+    post:
+      summary: "カードドロー"
+      description: "山札からカードを1枚引きます。プレイ可能なカードがない場合のみ実行できます。"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DrawCardRequest"
+      responses:
+        "200":
+          description: "カードドロー成功"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/GameActionResponse"
+        "400":
+          description: "カードを引けません"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: false
+                      data:
+                        $ref: "#/components/schemas/GameActionResponse"
+
+  /api/v1/games/{gameId}/actions/skip:
+    parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "ゲームID"
+        example: "game_1234567890"
+
+    post:
+      summary: "ターンスキップ"
+      description: "ターンをスキップします。山札が空でプレイ可能なカードがない場合のみ実行できます。"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkipTurnRequest"
+      responses:
+        "200":
+          description: "ターンスキップ成功"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/GameActionResponse"
+        "400":
+          description: "ターンをスキップできません"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: false
+                      data:
+                        $ref: "#/components/schemas/GameActionResponse"
 
   # チャットAPI
   /api/rooms/{roomId}/chat:
