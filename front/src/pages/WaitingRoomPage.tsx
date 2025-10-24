@@ -2,7 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Container, Header, Footer, Card, Button, Grid, GridItem, ChatBox } from '../components';
 import { PlayerContext } from '../contexts';
 import { useApiError } from '../hooks/useApiError';
-import { getRoom, getRoomByCode, leaveRoom, setReady, startGame, sendChatMessage, getChatMessages } from '../api/room';
+import { getRoom, getRoomByCode, leaveRoom, setReady, sendChatMessage, getChatMessages } from '../api/room';
+import { createGame } from '../api/game';
 import type { ChatMessage } from '../api/chat';
 
 interface WaitingRoomPageProps {
@@ -229,7 +230,7 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
   };
 
   const handleStartGame = async () => {
-    if (!room) return;
+    if (!room || !player) return;
 
     const allReady = room.players.every(p => p.isReady || p.isHost);
     if (!allReady) {
@@ -238,22 +239,25 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
     }
 
     try {
+      // プレイヤーIDのリストを作成
+      const playerIds = room.players.map(p => p.playerId);
+
       await handleApiCall(
-        () => startGame(room.roomId, { hostId: player!.name }),
+        () => createGame({ roomId: room.roomId, playerIds }),
         (result) => {
-          console.log('Game started:', result);
+          console.log('Game created:', result);
           // ゲーム画面に遷移
           if (onNavigate) {
             onNavigate(`game/${result.gameId}`);
           }
         },
         (error) => {
-          console.error('Failed to start game:', error);
-          alert(`ゲームの開始に失敗しました: ${error.message}`);
+          console.error('Failed to create game:', error);
+          alert(`ゲームの作成に失敗しました: ${error.message}`);
         }
       );
     } catch (error) {
-      console.error('Failed to start game:', error);
+      console.error('Failed to create game:', error);
     }
   };
 
