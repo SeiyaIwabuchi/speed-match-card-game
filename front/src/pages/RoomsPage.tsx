@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Header, Footer, Grid, GridItem, Card, Button, Input } from '../components';
 import { useApiError } from '../hooks/useApiError';
-import { getRooms, joinRoom, getRoomByCode, type RoomListItem } from '../api';
+import { getRooms, joinRoom, getRoomByCode, getRoom, type RoomListItem } from '../api';
 import type { Player } from '../contexts';
 
 interface RoomsPageProps {
@@ -109,12 +109,22 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
     try {
       await handleApiCall(
         () => joinRoom(roomId, { playerId: player.id! }),
-        (result) => {
+        async (result) => {
           console.log('Joined room:', result);
-          // 待機画面に遷移（roomIdを使用）
-          if (onNavigate) {
-            onNavigate(`waiting-room/${result.roomId}`);
-          }
+          // ルーム情報を取得してroomCodeを取得
+          await handleApiCall(
+            () => getRoom(result.roomId),
+            (roomData) => {
+              // 待機画面に遷移（roomCodeを使用）
+              if (onNavigate) {
+                onNavigate(`waiting-room/${roomData.roomCode}`);
+              }
+            },
+            (roomError) => {
+              console.error('Failed to get room data:', roomError);
+              alert(`ルーム情報の取得に失敗しました: ${roomError.message}`);
+            }
+          );
         },
         (error) => {
           console.error('Failed to join room:', error);
@@ -164,9 +174,9 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
               console.log('Joined room by code:', joinResult);
               setShowJoinDialog(false);
               setJoinRoomCode('');
-              // 待機画面に遷移
+              // 待機画面に遷移（roomCodeを使用）
               if (onNavigate) {
-                onNavigate(`waiting-room/${joinResult.roomId}`);
+                onNavigate(`waiting-room/${roomData.roomCode}`);
               }
             },
             (joinError) => {
