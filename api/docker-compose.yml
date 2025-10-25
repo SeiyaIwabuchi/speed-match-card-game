@@ -20,6 +20,16 @@ services:
       retries: 5
     networks:
       - speedmatch-network
+  pgweb:
+    image: sosedoff/pgweb
+    ports:
+      - "8081:8081"
+    environment:
+      PGWEB_DATABASE_URL: postgres://speedmatch_user:speedmatch_password@postgres:5432/speedmatch_dev?sslmode=disable
+    depends_on:
+      - postgres
+    networks:
+      - speedmatch-network
 
 volumes:
   postgres_data:

@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class RoomCreateRequest(
+    val hostId: String,
     val roomName: String? = null,
     val maxPlayers: Int = 4,
     val initialHandSize: Int = 7,

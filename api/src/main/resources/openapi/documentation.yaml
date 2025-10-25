@@ -607,7 +607,13 @@ components:
     # ルーム関連スキーマ
     RoomCreateRequest:
       type: object
+      required:
+        - hostId
       properties:
+        hostId:
+          type: string
+          description: "ホストのプレイヤーID"
+          example: "pl_1234567890"
         roomName:
           type: string
           maxLength: 50
