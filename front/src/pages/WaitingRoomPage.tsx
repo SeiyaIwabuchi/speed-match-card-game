@@ -32,6 +32,7 @@ interface Room {
   status: string;
   players: Participant[];
   createdAt: string;
+  gameId?: string; // ゲーム開始後に追加される
 }
 
 const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode }) => {
@@ -131,14 +132,18 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
       if (roomData.status === 'playing' || roomData.status === 'started') {
         console.log('Game has started, navigating to game screen');
         if (onNavigate) {
-          // ゲームIDを取得するためにゲーム状態を確認
-          try {
-            const gameState = await getGameState(roomId, player.id);
-            onNavigate(`game/${gameState.gameId}`);
-          } catch (error) {
-            console.error('Failed to get game state:', error);
-            // フォールバック: ルームIDでゲームを探す
-            onNavigate(`game/${roomId}`);
+          // gameIdがルーム情報に含まれている場合
+          if (roomData.gameId) {
+            onNavigate(`game/${roomData.gameId}`);
+          } else {
+            // フォールバック: ゲーム状態から取得
+            try {
+              const gameState = await getGameState(roomId, player.id);
+              onNavigate(`game/${gameState.gameId}`);
+            } catch (error) {
+              console.error('Failed to get game state:', error);
+              alert("ゲーム状態の取得に失敗しました。");
+            }
           }
         }
       }
