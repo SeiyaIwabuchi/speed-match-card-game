@@ -1005,19 +1005,18 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   /api/v1/players/{playerId}:
-    parameters:
-      - name: playerId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "プレイヤーID"
-        example: "pl_1234567890"
-
     get:
       tags: ["players"]
       summary: "プレイヤー情報取得"
       description: "指定されたプレイヤーの情報を取得します"
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "プレイヤーID"
+          example: "pl_1234567890"
       responses:
         "200":
           description: "プレイヤー情報"
@@ -1041,6 +1040,14 @@ paths:
       tags: ["players"]
       summary: "プレイヤー情報更新"
       description: "指定されたプレイヤーの情報を更新します"
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "プレイヤーID"
+          example: "pl_1234567890"
       requestBody:
         required: true
         content:
@@ -1079,19 +1086,18 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   /api/v1/players/{playerId}/stats:
-    parameters:
-      - name: playerId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "プレイヤーID"
-        example: "pl_1234567890"
-
     get:
       tags: ["players"]
       summary: "プレイヤー統計取得"
       description: "指定されたプレイヤーの詳細統計を取得します"
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "プレイヤーID"
+          example: "pl_1234567890"
       responses:
         "200":
           description: "プレイヤー統計情報"
@@ -1113,23 +1119,21 @@ paths:
 
   # ポーリングAPI（Phase 11）
   /api/v1/rooms/code/{roomCode}/state:
-    parameters:
-      - name: roomCode
-        in: path
-        required: true
-        schema:
-          type: string
-          minLength: 6
-          maxLength: 6
-          pattern: "^[A-Z0-9]+$"
-        description: "6桁のルームコード"
-        example: "ABC123"
-
     get:
       tags: ["rooms"]
       summary: "ルーム状態取得（ポーリング用）"
       description: "ルームの現在の状態を取得します。If-Modified-Sinceヘッダーを使用して効率的なポーリングを実現します。"
       parameters:
+        - name: roomCode
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 6
+            maxLength: 6
+            pattern: "^[A-Z0-9]+$"
+          description: "6桁のルームコード"
+          example: "ABC123"
         - name: If-Modified-Since
           in: header
           required: false
@@ -1196,26 +1200,25 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   /api/v1/games/{gameId}/state:
-    parameters:
-      - name: gameId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ゲームID"
-        example: "game_1234567890"
-      - name: playerId
-        in: query
-        required: false
-        schema:
-          type: string
-        description: "プレイヤーID（指定すると自分の手札が表示される）"
-        example: "pl_test_001"
-
     get:
       tags: ["games"]
       summary: "ゲーム状態取得"
       description: "ゲームの現在の状態を取得します。playerIdを指定すると、そのプレイヤーの手札とプレイ可能カードが含まれます。"
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ゲームID"
+          example: "game_1234567890"
+        - name: playerId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "プレイヤーID（指定すると自分の手札が表示される）"
+          example: "pl_test_001"
       responses:
         "200":
           description: "ゲーム状態情報"
@@ -1242,19 +1245,18 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   /api/v1/games/{gameId}/actions/play:
-    parameters:
-      - name: gameId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ゲームID"
-        example: "game_1234567890"
-
     post:
       tags: ["games"]
       summary: "カードプレイ"
       description: "カードを場に出します。同じスートまたはランク±1のカードのみプレイ可能です。"
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ゲームID"
+          example: "game_1234567890"
       requestBody:
         required: true
         content:
@@ -1289,19 +1291,18 @@ paths:
                         $ref: "#/components/schemas/GameActionResponse"
 
   /api/v1/games/{gameId}/actions/draw:
-    parameters:
-      - name: gameId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ゲームID"
-        example: "game_1234567890"
-
     post:
       tags: ["games"]
       summary: "カードドロー"
       description: "山札からカードを1枚引きます。プレイ可能なカードがない場合のみ実行できます。"
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ゲームID"
+          example: "game_1234567890"
       requestBody:
         required: true
         content:
@@ -1336,19 +1337,18 @@ paths:
                         $ref: "#/components/schemas/GameActionResponse"
 
   /api/v1/games/{gameId}/actions/skip:
-    parameters:
-      - name: gameId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ゲームID"
-        example: "game_1234567890"
-
     post:
       tags: ["games"]
       summary: "ターンスキップ"
       description: "ターンをスキップします。山札が空でプレイ可能なカードがない場合のみ実行できます。"
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ゲームID"
+          example: "game_1234567890"
       requestBody:
         required: true
         content:
@@ -1383,19 +1383,18 @@ paths:
                         $ref: "#/components/schemas/GameActionResponse"
 
   /api/v1/games/{gameId}/result:
-    parameters:
-      - name: gameId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ゲームID"
-        example: "game_1234567890"
-
     get:
       tags: ["games"]
       summary: "ゲーム結果取得"
       description: "終了したゲームの結果を取得します。ランキング、プレイ時間、統計情報を含みます。"
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ゲームID"
+          example: "game_1234567890"
       responses:
         "200":
           description: "ゲーム結果取得成功"
@@ -1454,19 +1453,18 @@ paths:
 
   # チャットAPI
   /api/v1/rooms/{roomId}/chat:
-    parameters:
-      - name: roomId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ルームID"
-        example: "rm_abc123"
-
     post:
       tags: ["rooms"]
       summary: "チャットメッセージ送信"
       description: "ルーム内にチャットメッセージを送信します。"
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ルームID"
+          example: "rm_abc123"
       requestBody:
         required: true
         content:
@@ -1503,6 +1501,13 @@ paths:
       summary: "チャットメッセージ履歴取得"
       description: "ルームのチャットメッセージ履歴を取得します。ページネーションに対応しています。"
       parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ルームID"
+          example: "rm_abc123"
         - name: limit
           in: query
           required: false
@@ -1628,19 +1633,18 @@ paths:
                         $ref: "#/components/schemas/RoomListResponse"
 
   /api/v1/rooms/{roomId}:
-    parameters:
-      - name: roomId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ルームID"
-        example: "rm_abc123"
-
     get:
       tags: ["rooms"]
       summary: "ルーム詳細取得"
       description: "指定されたルームの詳細情報を取得します"
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ルームID"
+          example: "rm_abc123"
       responses:
         "200":
           description: "ルーム詳細情報"
@@ -1661,19 +1665,18 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   /api/v1/rooms/{roomId}/join:
-    parameters:
-      - name: roomId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ルームID"
-        example: "rm_abc123"
-
     post:
       tags: ["rooms"]
       summary: "ルーム参加"
       description: "指定されたルームに参加します"
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ルームID"
+          example: "rm_abc123"
       requestBody:
         required: true
         content:
@@ -1706,19 +1709,18 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   /api/v1/rooms/{roomId}/leave:
-    parameters:
-      - name: roomId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ルームID"
-        example: "rm_abc123"
-
     post:
       tags: ["rooms"]
       summary: "ルーム退出"
       description: "指定されたルームから退出します"
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ルームID"
+          example: "rm_abc123"
       requestBody:
         required: true
         content:
@@ -1751,19 +1753,18 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   /api/v1/rooms/{roomId}/ready:
-    parameters:
-      - name: roomId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ルームID"
-        example: "rm_abc123"
-
     post:
       tags: ["rooms"]
       summary: "準備完了設定"
       description: "プレイヤーの準備完了状態を設定します"
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ルームID"
+          example: "rm_abc123"
       requestBody:
         required: true
         content:
@@ -1796,19 +1797,18 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   /api/v1/rooms/{roomId}/start:
-    parameters:
-      - name: roomId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "ルームID"
-        example: "rm_abc123"
-
     post:
       tags: ["rooms"]
       summary: "ゲーム開始"
       description: "ルーム内のゲームを開始します（ホストのみ）"
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "ルームID"
+          example: "rm_abc123"
       requestBody:
         required: true
         content:
@@ -1841,22 +1841,21 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
 
   /api/v1/rooms/code/{roomCode}:
-    parameters:
-      - name: roomCode
-        in: path
-        required: true
-        schema:
-          type: string
-          minLength: 6
-          maxLength: 6
-          pattern: "^[A-Z0-9]+$"
-        description: "6桁のルームコード"
-        example: "ABC123"
-
     get:
       tags: ["rooms"]
       summary: "ルームコードでルーム取得"
       description: "ルームコードを使用してルーム情報を取得します"
+      parameters:
+        - name: roomCode
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 6
+            maxLength: 6
+            pattern: "^[A-Z0-9]+$"
+          description: "6桁のルームコード"
+          example: "ABC123"
       responses:
         "200":
           description: "ルーム情報"
