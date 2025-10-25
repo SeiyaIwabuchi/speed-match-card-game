@@ -3,7 +3,7 @@ import { Container, Header, Footer, Card, Button, Grid, GridItem, ChatBox } from
 import { PlayerContext } from '../contexts';
 import { useApiError } from '../hooks/useApiError';
 import { getRoom, getRoomByCode, leaveRoom, setReady, sendChatMessage, getChatMessages, startGame } from '../api/room';
-import { createGame } from '../api/game';
+import { createGame, getGameState } from '../api/game';
 import type { ChatMessage } from '../api/chat';
 
 interface WaitingRoomPageProps {
@@ -125,6 +125,22 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
       const currentParticipant = roomData.players.find((p: Participant) => p.playerId === player.name);
       if (currentParticipant) {
         setIsReady(currentParticipant.isReady);
+      }
+
+      // ゲームが開始されたら全員がゲーム画面に遷移
+      if (roomData.status === 'playing' || roomData.status === 'started') {
+        console.log('Game has started, navigating to game screen');
+        if (onNavigate) {
+          // ゲームIDを取得するためにゲーム状態を確認
+          try {
+            const gameState = await getGameState(roomId, player.id);
+            onNavigate(`game/${gameState.gameId}`);
+          } catch (error) {
+            console.error('Failed to get game state:', error);
+            // フォールバック: ルームIDでゲームを探す
+            onNavigate(`game/${roomId}`);
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load room data:', error);
@@ -251,10 +267,8 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
             () => createGame({ roomId: room.roomId, playerIds }),
             (createResult) => {
               console.log('Game created:', createResult);
-              // ゲーム画面に遷移
-              if (onNavigate) {
-                onNavigate(`game/${createResult.gameId}`);
-              }
+              // ホストもポーリングでステータス変更を待つ（全員が同じタイミングで遷移するため）
+              // 遷移はloadRoomDataのポーリングで検知される
             },
             (createError) => {
               console.error('Failed to create game:', createError);
