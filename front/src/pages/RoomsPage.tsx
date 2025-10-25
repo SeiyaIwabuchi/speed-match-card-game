@@ -19,7 +19,6 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [joinRoomCode, setJoinRoomCode] = useState('');
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
-  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
 
   useEffect(() => {
     loadRooms();
@@ -27,12 +26,10 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
     const interval = setInterval(() => {
       loadRooms();
     }, 5000); // 5秒ごとに更新
-    setPollingInterval(interval);
 
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
+      console.log('RoomsPage: Cleaning up room polling interval');
+      clearInterval(interval);
     };
   }, []);
 
