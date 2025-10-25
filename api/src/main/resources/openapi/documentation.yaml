@@ -741,6 +741,11 @@ components:
           items:
             $ref: "#/components/schemas/RoomPlayerInfo"
           description: "ルーム内のプレイヤー一覧"
+        gameId:
+          type: string
+          nullable: true
+          description: "ゲームID（ゲーム開始時のみ）"
+          example: "gm_xyz789"
         createdAt:
           type: string
           format: date-time

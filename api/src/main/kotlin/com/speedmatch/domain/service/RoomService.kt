@@ -64,6 +64,7 @@ class RoomService {
                 isPublic = request.isPublic,
                 status = "waiting",
                 players = players,
+                gameId = null, // 新規作成時はゲーム未開始
                 createdAt = now.toString()
             )
         }
@@ -128,6 +129,15 @@ class RoomService {
 
             val players = getRoomPlayers(roomId)
 
+            // ゲームが開始されている場合はgameIdを取得
+            val gameId = if (room[Rooms.status] == "playing") {
+                Games.select(Games.gameId)
+                    .where { Games.roomId eq roomId }
+                    .singleOrNull()?.get(Games.gameId)
+            } else {
+                null
+            }
+
             RoomResponse(
                 roomId = room[Rooms.roomId],
                 roomCode = room[Rooms.roomCode],
@@ -140,6 +150,7 @@ class RoomService {
                 isPublic = room[Rooms.isPublic],
                 status = room[Rooms.status],
                 players = players,
+                gameId = gameId,
                 createdAt = room[Rooms.createdAt].toString()
             )
         }
@@ -324,26 +335,26 @@ class RoomService {
                 throw ValidationException("NOT_HOST", "ホストのみゲームを開始できます")
             }
 
-            // 全員準備完了かチェック
-            val totalPlayers = RoomPlayers.selectAll()
+            // 全員準備完了かチェック（ホストを除く）
+            val playerStats = RoomPlayers.select(RoomPlayers.isReady, RoomPlayers.isHost)
                 .where { (RoomPlayers.roomId eq roomId) and RoomPlayers.leftAt.isNull() }
-                .count()
+                .map { Pair(it[RoomPlayers.isReady], it[RoomPlayers.isHost]) }
 
-            val readyPlayers = RoomPlayers.selectAll()
-                .where { (RoomPlayers.roomId eq roomId) and RoomPlayers.leftAt.isNull() and (RoomPlayers.isReady eq true) }
-                .count()
+            val nonHostPlayers = playerStats.filter { !it.second } // ホスト以外
+            val totalNonHostPlayers = nonHostPlayers.size
+            val readyNonHostPlayers = nonHostPlayers.count { it.first }
 
-            if (totalPlayers != readyPlayers) {
+            if (totalNonHostPlayers != readyNonHostPlayers) {
                 throw ValidationException("NOT_ALL_READY", "全員が準備完了になるまで待ってください")
             }
 
             // 最低人数チェック
+            val totalPlayers = playerStats.size // ホストを含む全員
             if (totalPlayers < 2) {
                 throw ValidationException("NOT_ENOUGH_PLAYERS", "最低2人必要です")
             }
 
             val now = Instant.now()
-            val gameId = "gm_${UUID.randomUUID().toString().replace("-", "").substring(0, 16)}"
 
             // ルームのステータスを更新
             Rooms.update({ Rooms.roomId eq roomId }) {
@@ -352,17 +363,14 @@ class RoomService {
                 it[updatedAt] = java.time.Instant.now()
             }
 
-            // ゲームを作成
-            Games.insert {
-                it[Games.gameId] = gameId
-                it[Games.roomId] = roomId
-                it[Games.status] = "playing"
-                it[Games.startedAt] = now
-            }
+            // ゲーム開始後に作成されたgameIdを取得
+            val gameId = Games.select(Games.gameId)
+                .where { Games.roomId eq roomId }
+                .singleOrNull()?.get(Games.gameId)
 
             RoomStartResponse(
                 roomId = roomId,
-                gameId = gameId,
+                gameId = gameId ?: throw ValidationException("GAME_NOT_FOUND", "ゲームが見つかりません"),
                 status = "playing",
                 startedAt = now.toString()
             )

@@ -76,6 +76,7 @@ data class RoomResponse(
     val isPublic: Boolean,
     val status: String,
     val players: List<RoomPlayerInfo>,
+    val gameId: String? = null, // ゲーム開始時のみ設定
     val createdAt: String
 )
 

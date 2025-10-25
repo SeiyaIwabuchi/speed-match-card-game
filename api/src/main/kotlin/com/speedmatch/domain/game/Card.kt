@@ -1,5 +1,7 @@
 package com.speedmatch.domain.game
 
+import kotlin.math.abs
+
 /**
  * トランプカード
  * 
@@ -60,7 +62,7 @@ data class Card(
             if (playedCard.suit == fieldCard.suit) return true
             
             // 数字±1（Aと13もつながる）
-            val rankDiff = Math.abs(playedCard.rank - fieldCard.rank)
+            val rankDiff = abs(playedCard.rank - fieldCard.rank)
             if (rankDiff == 1) return true
             
             // AとKのラップアラウンド
