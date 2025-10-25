@@ -1,201 +1,144 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React from 'react';
 import { Card } from '../ui';
 import GameCard from './GameCard';
 
-export interface CardData {
-  number: number;
-  suit: 'hearts' | 'diamonds' | 'clubs' | 'spades';
-  id: string;
+export interface FieldCardsDTO {
+  first: {
+    suit: 'SPADES' | 'HEARTS' | 'DIAMONDS' | 'CLUBS';
+    rank: number;
+  };
+  second: {
+    suit: 'SPADES' | 'HEARTS' | 'DIAMONDS' | 'CLUBS';
+    rank: number;
+  };
 }
 
 export interface GameBoardProps {
-  centerCard: CardData;
-  playerHand: CardData[];
-  onCardPlay: (card: CardData) => void;
-  currentPlayer: number;
-  isPlayerTurn: boolean;
-  timeLeft: number;
+  fieldCards: FieldCardsDTO;
+  onFieldClick?: (fieldIndex: 0 | 1) => void; // 場札の位置をクリックしたとき
+  playableCards?: Array<{
+    suit: 'SPADES' | 'HEARTS' | 'DIAMONDS' | 'CLUBS';
+    rank: number;
+  }>; // プレイ可能なカードのリスト
+  selectedCard?: {
+    suit: 'SPADES' | 'HEARTS' | 'DIAMONDS' | 'CLUBS';
+    rank: number;
+  } | null; // 選択されたカード
+  className?: string;
 }
 
 const GameBoard: React.FC<GameBoardProps> = ({
-  centerCard,
-  playerHand,
-  onCardPlay,
-  currentPlayer: _currentPlayer,
-  isPlayerTurn,
-  timeLeft
+  fieldCards,
+  onFieldClick,
+  playableCards = [],
+  selectedCard,
+  className = ''
 }) => {
-  const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const [playingCard, setPlayingCard] = useState<string | null>(null);
-  const [lastPlayedCard, setLastPlayedCard] = useState<CardData | null>(null);
-
-  // カードがプレイ可能かチェック
-  const isCardPlayable = useCallback((card: CardData): boolean => {
-    if (!isPlayerTurn) return false;
-    
-    const centerNumber = centerCard.number;
-    const cardNumber = card.number;
-    
-    // ±1以内または同じ数字
-    return Math.abs(centerNumber - cardNumber) <= 1 || centerNumber === cardNumber;
-  }, [centerCard.number, isPlayerTurn]);
-
-  // カードクリック処理
-  const handleCardClick = useCallback((card: CardData) => {
-    if (!isCardPlayable(card)) return;
-    
-    if (selectedCard === card.id) {
-      // 既に選択されているカードをクリック → プレイ
-      handleCardPlay(card);
-    } else {
-      // 新しいカードを選択
-      setSelectedCard(card.id);
+  const handleFieldClick = (fieldIndex: 0 | 1) => {
+    if (onFieldClick) {
+      onFieldClick(fieldIndex);
     }
-  }, [selectedCard, isCardPlayable]);
+  };
 
-  // カードダブルクリック処理（即座にプレイ）
-  const handleCardDoubleClick = useCallback((card: CardData) => {
-    if (!isCardPlayable(card)) return;
-    handleCardPlay(card);
-  }, [isCardPlayable]);
+  // 場札が選択されたカードでプレイ可能かどうかチェック
+  const isFieldPlayable = (fieldIndex: 0 | 1): boolean => {
+    if (!selectedCard || !onFieldClick) return false;
 
-  // カードプレイ処理
-  const handleCardPlay = useCallback((card: CardData) => {
-    setPlayingCard(card.id);
-    setLastPlayedCard(card);
-    setSelectedCard(null);
-    
-    // アニメーション後にカードを実際にプレイ
-    setTimeout(() => {
-      onCardPlay(card);
-      setPlayingCard(null);
-    }, 500);
-  }, [onCardPlay]);
+    const fieldCard = fieldIndex === 0 ? fieldCards.first : fieldCards.second;
 
-  // キーボードショートカット
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (!isPlayerTurn) return;
-      
-      const num = parseInt(event.key);
-      if (num >= 1 && num <= 9) {
-        const card = playerHand.find(c => c.number === num && isCardPlayable(c));
-        if (card) {
-          handleCardPlay(card);
-        }
-      }
-      
-      if (event.key === 'Enter' && selectedCard) {
-        const card = playerHand.find(c => c.id === selectedCard);
-        if (card && isCardPlayable(card)) {
-          handleCardPlay(card);
-        }
-      }
-    };
+    // ルール1: 同じスートのカードは出せる
+    if (selectedCard.suit === fieldCard.suit) {
+      return true;
+    }
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isPlayerTurn, playerHand, selectedCard, handleCardPlay, isCardPlayable]);
+    // ルール2: 数字が±1以内のカードは出せる
+    const rankDiff = Math.abs(selectedCard.rank - fieldCard.rank);
+    if (rankDiff <= 1 || (selectedCard.rank === 1 && fieldCard.rank === 13) || (selectedCard.rank === 13 && fieldCard.rank === 1)) {
+      return true;
+    }
+
+    return false;
+  };
 
   return (
-    <div className="space-y-6">
-      {/* 場のカード */}
-      <Card variant="elevated" className="relative">
-        <div className="p-6 text-center">
-          <h3 className="font-bold mb-4">場のカード</h3>
-          
-          {/* センターカード */}
-          <div className="relative flex justify-center">
-            <GameCard
-              number={centerCard.number}
-              suit={centerCard.suit}
-              size="lg"
-              playable={false}
-              className="relative z-10"
-            />
-            
-            {/* プレイされたカードのアニメーション */}
-            {lastPlayedCard && (
-              <div 
-                className="absolute z-20 animate-bounce"
-                style={{
-                  animation: 'cardPlay 0.5s ease-out forwards'
-                }}
-              >
-                <GameCard
-                  number={lastPlayedCard.number}
-                  suit={lastPlayedCard.suit}
-                  size="lg"
-                  playable={false}
-                />
-              </div>
-            )}
-          </div>
-          
-          <div className="mt-4 space-y-2">
-            <p className="text-sm text-secondary">
-              ±1以内の数字または同じ数字を出せます
-            </p>
-            {isPlayerTurn && (
-              <p className="text-sm font-medium text-green-600">
-                あなたのターンです！
-              </p>
-            )}
-            {timeLeft <= 10 && timeLeft > 0 && (
-              <p className="text-sm font-bold text-red-500 animate-pulse">
-                残り {timeLeft} 秒
-              </p>
-            )}
-          </div>
-        </div>
-      </Card>
+    <div className={`space-y-4 ${className}`}>
+      <Card variant="elevated" className="p-6">
+        <div className="text-center">
+          <h3 className="text-lg font-bold mb-6">場札</h3>
 
-      {/* プレイヤーの手札 */}
-      <Card variant="elevated">
-        <div className="p-6">
-          <h3 className="font-bold mb-4 text-center">あなたの手札</h3>
-          
-          <div className="flex gap-2 justify-center flex-wrap">
-            {playerHand.map((card) => {
-              const isPlayable = isCardPlayable(card);
-              const isSelected = selectedCard === card.id;
-              const isPlaying = playingCard === card.id;
-              
-              return (
-                <div
-                  key={card.id}
-                  className={`transition-all duration-300 ${
-                    isPlaying ? 'animate-pulse opacity-50 pointer-events-none' : ''
-                  }`}
-                >
-                  <GameCard
-                    number={card.number}
-                    suit={card.suit}
-                    playable={isPlayable}
-                    selected={isSelected}
-                    onClick={() => handleCardClick(card)}
-                    onDoubleClick={() => handleCardDoubleClick(card)}
-                    className={`${!isPlayable ? 'grayscale' : ''}`}
-                  />
+          <div className="flex justify-center gap-8">
+            {/* 1番目の場札 */}
+            <div
+              className={`relative ${onFieldClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''} ${
+                selectedCard && isFieldPlayable(0) ? 'ring-2 ring-green-500 ring-opacity-75' : ''
+              }`}
+              onClick={() => handleFieldClick(0)}
+            >
+              <GameCard
+                suit={fieldCards.first.suit}
+                rank={fieldCards.first.rank}
+                playable={false}
+                size="lg"
+              />
+              {onFieldClick && (
+                <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  1
                 </div>
-              );
-            })}
+              )}
+            </div>
+
+            {/* 2番目の場札 */}
+            <div
+              className={`relative ${onFieldClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''} ${
+                selectedCard && isFieldPlayable(1) ? 'ring-2 ring-green-500 ring-opacity-75' : ''
+              }`}
+              onClick={() => handleFieldClick(1)}
+            >
+              <GameCard
+                suit={fieldCards.second.suit}
+                rank={fieldCards.second.rank}
+                playable={false}
+                size="lg"
+              />
+              {onFieldClick && (
+                <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  2
+                </div>
+              )}
+            </div>
           </div>
-          
-          <div className="text-center mt-4 space-y-1">
-            <p className="text-sm text-secondary">
-              カードをクリックして選択、もう一度クリックまたはダブルクリックでプレイ
+
+          {onFieldClick && (
+            <p className="text-sm text-secondary mt-4">
+              カードをプレイしたい位置をクリックしてください
             </p>
-            {isPlayerTurn && (
-              <p className="text-xs text-secondary">
-                ショートカット: 数字キー(1-9)で直接プレイ、Enterで選択中のカードをプレイ
+          )}
+
+          {playableCards.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-green-600 mb-2">
+                プレイ可能なカード: {playableCards.length}枚
               </p>
-            )}
-          </div>
+              <div className="flex justify-center gap-2 flex-wrap">
+                {playableCards.slice(0, 5).map((card, index) => (
+                  <GameCard
+                    key={`${card.suit}-${card.rank}-${index}`}
+                    suit={card.suit}
+                    rank={card.rank}
+                    playable={false}
+                    size="sm"
+                  />
+                ))}
+                {playableCards.length > 5 && (
+                  <div className="text-xs text-secondary self-center">
+                    +{playableCards.length - 5}枚
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
-
-
     </div>
   );
 };

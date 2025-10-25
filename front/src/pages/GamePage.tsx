@@ -1,8 +1,9 @@
-import React, { useEffect, useContext } from 'react';
+import React, { useEffect, useContext, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Container, Header, Footer, Card, Button } from '../components';
 import { GameProvider, useGame } from '../contexts';
 import { PlayerContext } from '../contexts';
+import { GameBoard, PlayerHand, PlayerList, GameActions, type CardDTO } from '../components/game';
 
 interface GamePageProps {
   onNavigate?: (page: string) => void;
@@ -164,26 +165,95 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
   const myPlayerState = gameState.players.find(p => p.id === player?.id);
   const myHand = myPlayerState?.hand || [];
 
-  // ゲーム中画面（実装は次のメッセージで続けます）
+  // 他のプレイヤー一覧
+  const otherPlayers = gameState.players.filter(p => p.id !== player?.id).map(p => ({
+    id: p.id,
+    name: `Player ${p.id.slice(0, 8)}`, // 仮の名前表示
+    handCount: p.handSize,
+    isCurrentPlayer: p.id === gameState.currentPlayerId,
+    isConnected: true // 仮定
+  }));
+
+  // 選択されたカード（GameBoardからの操作用）
+  const [selectedCardForBoard, setSelectedCardForBoard] = useState<CardDTO | null>(null);
+
+  // GameContextの関数を事前に取得（hooksルール遵守）
+  const { handlePlayCard, handleDrawCard, handleSkipTurn } = useGame();
+
+  // ゲーム中画面
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
       <Container size="lg" variant="gradient">
-        <Header 
+        <Header
           title="ゲーム中"
           player={playerInfo}
           showNavigation={false}
         />
-        
-        <main className="py-6">
-          <Card variant="elevated">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">ゲーム実装中...</h2>
-              <p className="mb-4">ゲームID: {gameState.gameId}</p>
-              <p className="mb-4">プレイヤー数: {gameState.players.length}</p>
-              <p className="mb-4">あなたの手札: {myHand.length}枚</p>
-              <p className="mb-4">ターン: {isPlayerTurn() ? 'あなた' : '他のプレイヤー'}</p>
-              <Button onClick={fetchGameState} className="mb-2">状態を更新</Button>
-              <Button variant="secondary" onClick={handleLeaveGame}>退出</Button>
+
+        <main className="py-6 space-y-6">
+          {/* デバッグ情報 */}
+          <Card variant="elevated" className="p-4 bg-yellow-50 border-yellow-200">
+            <h3 className="text-sm font-bold text-yellow-800 mb-2">デバッグ情報</h3>
+            <div className="text-xs text-yellow-700 space-y-1">
+              <div>場札1: {gameState.fieldCards?.first.suit} {gameState.fieldCards?.first.rank}</div>
+              <div>場札2: {gameState.fieldCards?.second.suit} {gameState.fieldCards?.second.rank}</div>
+              <div>プレイ可能なカード: {gameState.playableCards?.length || 0}枚</div>
+              <div>ターン: {isPlayerTurn() ? 'あなた' : '相手'}</div>
+              <div>ステータス: {gameState.status}</div>
+            </div>
+          </Card>
+
+          {/* 場札 */}
+          <GameBoard
+            fieldCards={gameState.fieldCards}
+            playableCards={gameState.playableCards || []}
+            selectedCard={selectedCardForBoard}
+            onFieldClick={(fieldIndex) => {
+              if (selectedCardForBoard) {
+                handlePlayCard(selectedCardForBoard, fieldIndex);
+                setSelectedCardForBoard(null);
+              }
+            }}
+          />
+
+          {/* 自分の手札とアクション */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PlayerHand
+              hand={myHand}
+              playableCards={gameState.playableCards || []}
+              fieldCards={gameState.fieldCards}
+              onCardSelect={setSelectedCardForBoard}
+              onCardPlay={handlePlayCard}
+              isPlayerTurn={isPlayerTurn()}
+            />
+
+            <GameActions
+              onDrawCard={handleDrawCard}
+              onSkipTurn={handleSkipTurn}
+              canDrawCard={isPlayerTurn() && gameState.deckRemaining > 0}
+              canSkipTurn={isPlayerTurn()}
+              isPlayerTurn={isPlayerTurn()}
+              isLoading={loading}
+            />
+          </div>
+
+          {/* プレイヤーリスト */}
+          <PlayerList
+            players={otherPlayers}
+            currentPlayerId={player?.id || ''}
+          />
+
+          {/* ゲーム情報 */}
+          <Card variant="elevated" className="p-4">
+            <div className="flex justify-between items-center text-sm text-secondary">
+              <span>ゲームID: {gameState.gameId}</span>
+              <span>残りカード: {gameState.deckRemaining}枚</span>
+              <Button variant="secondary" size="sm" onClick={fetchGameState} disabled={loading}>
+                更新
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleLeaveGame}>
+                退出
+              </Button>
             </div>
           </Card>
         </main>
