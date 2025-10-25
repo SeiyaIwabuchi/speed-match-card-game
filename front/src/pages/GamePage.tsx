@@ -39,13 +39,17 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
       return;
     }
 
+    let isMounted = true;
     console.log('GamePage: Starting game state polling');
     const interval = setInterval(() => {
-      fetchGameState();
+      if (isMounted) {
+        fetchGameState();
+      }
     }, 5000);
 
     return () => {
       console.log('GamePage: Stopping game state polling');
+      isMounted = false;
       clearInterval(interval);
     };
   }, [gameState.gameId, gameState.status]);

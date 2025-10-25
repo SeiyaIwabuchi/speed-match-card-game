@@ -76,41 +76,50 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
 
   // チャットメッセージのポーリング
   useEffect(() => {
-    if (room) {
-      loadChatMessages();
-      
-      // 3秒ごとにチャットメッセージを取得
-      const interval = setInterval(() => {
+    if (!room) return;
+    
+    let isMounted = true;
+    loadChatMessages();
+    
+    // 3秒ごとにチャットメッセージを取得
+    const interval = setInterval(() => {
+      if (isMounted) {
         loadChatMessages();
-      }, 3000);
-      setChatPollingInterval(interval);
-    }
+      }
+    }, 3000);
+    setChatPollingInterval(interval);
 
     return () => {
-      if (chatPollingInterval) {
-        console.log('Cleaning up chat polling interval');
-        clearInterval(chatPollingInterval);
-        setChatPollingInterval(null);
+      console.log('WaitingRoomPage: Cleaning up chat polling interval');
+      isMounted = false;
+      if (interval) {
+        clearInterval(interval);
       }
+      setChatPollingInterval(null);
     };
   }, [room]);
 
   useEffect(() => {
-    if (roomCode) {
-      loadRoomData();
-      // ルーム情報を定期的に更新（ポーリング）
-      const interval = setInterval(() => {
+    if (!roomCode) return;
+    
+    let isMounted = true;
+    loadRoomData();
+    
+    // ルーム情報を定期的に更新（ポーリング）
+    const interval = setInterval(() => {
+      if (isMounted) {
         loadRoomData();
-      }, 3000); // 3秒ごとに更新
-      setPollingInterval(interval);
-    }
+      }
+    }, 3000); // 3秒ごとに更新
+    setPollingInterval(interval);
 
     return () => {
-      if (pollingInterval) {
-        console.log('Cleaning up room polling interval');
-        clearInterval(pollingInterval);
-        setPollingInterval(null);
+      console.log('WaitingRoomPage: Cleaning up room polling interval');
+      isMounted = false;
+      if (interval) {
+        clearInterval(interval);
       }
+      setPollingInterval(null);
     };
   }, [roomCode]);
 

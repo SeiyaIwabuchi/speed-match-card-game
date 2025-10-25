@@ -21,14 +21,19 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
     loadRooms();
+    
     // ルーム情報を定期的に更新（ポーリング）
     const interval = setInterval(() => {
-      loadRooms();
+      if (isMounted) {
+        loadRooms();
+      }
     }, 5000); // 5秒ごとに更新
 
     return () => {
       console.log('RoomsPage: Cleaning up room polling interval');
+      isMounted = false;
       clearInterval(interval);
     };
   }, []);
