@@ -14,19 +14,20 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
   const { player } = useContext(PlayerContext) || {};
   const { gameState, loading, error, isPlayerTurn, fetchGameState, clearError } = useGame();
 
+  // Player型をPlayerInfo型に変換
+  const playerInfo = player ? {
+    name: player.name,
+    avatar: player.avatar,
+    wins: player.wins,
+    totalGames: player.totalGames
+  } : undefined;
+
   // 初回ロード時にゲーム状態を取得
   useEffect(() => {
     if (gameId) {
       fetchGameState();
     }
   }, [gameId]);
-
-  // ゲーム終了時にリザルト画面へ遷移
-  useEffect(() => {
-    if (gameState.status === 'FINISHED' && gameState.gameId && onNavigate) {
-      onNavigate(`result/${gameState.gameId}`);
-    }
-  }, [gameState.status, gameState.gameId, onNavigate]);
 
   const handleLeaveGame = () => {
     if (onNavigate) {
@@ -41,7 +42,7 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
         <Container size="lg" variant="gradient">
           <Header 
             title="ゲーム"
-            player={player || undefined}
+            player={playerInfo}
             showNavigation={false}
           />
           
@@ -67,7 +68,7 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
         <Container size="lg" variant="gradient">
           <Header 
             title="ゲーム"
-            player={player || undefined}
+            player={playerInfo}
             showNavigation={false}
           />
           
@@ -104,7 +105,7 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
         <Container size="lg" variant="gradient">
           <Header 
             title="ゲーム終了"
-            player={player || undefined}
+            player={playerInfo}
             showNavigation={false}
           />
           
@@ -140,7 +141,7 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
         <Container size="lg" variant="gradient">
           <Header 
             title="ゲーム"
-            player={player || undefined}
+            player={playerInfo}
             showNavigation={false}
           />
           
@@ -169,7 +170,7 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
       <Container size="lg" variant="gradient">
         <Header 
           title="ゲーム中"
-          player={player || undefined}
+          player={playerInfo}
           showNavigation={false}
         />
         

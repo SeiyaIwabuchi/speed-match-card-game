@@ -80,6 +80,7 @@ const CreateRoomPage: React.FC<CreateRoomPageProps> = ({ onNavigate }) => {
           initialHandSize: settings.cardCount,
           turnTimeLimit: settings.timeLimit === 30 ? 30 : settings.timeLimit === 60 ? 60 : 0,
           isPublic: settings.isPublic,
+          hostId: player.id,
         }),
         (result) => {
           console.log('Room created:', result);

@@ -62,6 +62,7 @@ export interface RoomCreateRequest {
   initialHandSize?: number;
   turnTimeLimit?: number;
   isPublic?: boolean;
+  hostId?: string;
 }
 
 export interface RoomJoinRequest {

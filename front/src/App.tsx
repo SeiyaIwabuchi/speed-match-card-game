@@ -45,8 +45,8 @@ const AppRoutes: React.FC = () => {
           const roomId = page.split('/')[1];
           navigate(`/game/${roomId}`);
         } else if (page.startsWith('waiting-room/')) {
-          const roomCode = page.split('/')[1];
-          navigate(`/waiting-room/${roomCode}`);
+          const roomId = page.split('/')[1];
+          navigate(`/waiting-room/${roomId}`);
         } else if (page.startsWith('result/')) {
           const gameId = page.split('/')[1];
           navigate(`/result/${gameId}`);
@@ -115,7 +115,7 @@ const AppRoutes: React.FC = () => {
         } 
       />
       <Route 
-        path="/game/:roomId" 
+        path="/game/:gameId" 
         element={
           <GamePage 
             onNavigate={handleNavigate}
