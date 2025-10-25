@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Container, Header, Footer, Card, Button, Grid, GridItem, ChatBox } from '../components';
 import { PlayerContext } from '../contexts';
 import { useApiError } from '../hooks/useApiError';
-import { getRoom, getRoomByCode, leaveRoom, setReady, sendChatMessage, getChatMessages } from '../api/room';
+import { getRoom, getRoomByCode, leaveRoom, setReady, sendChatMessage, getChatMessages, startGame } from '../api/room';
 import { createGame } from '../api/game';
 import type { ChatMessage } from '../api/chat';
 
@@ -187,7 +187,7 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
 
     try {
       await handleApiCall(
-        () => setReady(room.roomId, { playerId: player.name, isReady: newReadyStatus }),
+        () => setReady(room.roomId, { playerId: player.id, isReady: newReadyStatus }),
         (result) => {
           console.log('Ready status updated:', result);
           // ルーム情報を再取得して同期
@@ -239,25 +239,36 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
     }
 
     try {
-      // プレイヤーIDのリストを作成
-      const playerIds = room.players.map(p => p.playerId);
-
+      // まずルームを開始状態に変更
       await handleApiCall(
-        () => createGame({ roomId: room.roomId, playerIds }),
-        (result) => {
-          console.log('Game created:', result);
-          // ゲーム画面に遷移
-          if (onNavigate) {
-            onNavigate(`game/${result.gameId}`);
-          }
+        () => startGame(room.roomId, { hostId: player.id! }),
+        (startResult) => {
+          console.log('Room started:', startResult);
+          
+          // 次にゲームを作成
+          const playerIds = room.players.map(p => p.playerId);
+          handleApiCall(
+            () => createGame({ roomId: room.roomId, playerIds }),
+            (createResult) => {
+              console.log('Game created:', createResult);
+              // ゲーム画面に遷移
+              if (onNavigate) {
+                onNavigate(`game/${createResult.gameId}`);
+              }
+            },
+            (createError) => {
+              console.error('Failed to create game:', createError);
+              alert(`ゲームの作成に失敗しました: ${createError.message}`);
+            }
+          );
         },
-        (error) => {
-          console.error('Failed to create game:', error);
-          alert(`ゲームの作成に失敗しました: ${error.message}`);
+        (startError) => {
+          console.error('Failed to start room:', startError);
+          alert(`ルームの開始に失敗しました: ${startError.message}`);
         }
       );
     } catch (error) {
-      console.error('Failed to create game:', error);
+      console.error('Failed to start game:', error);
     }
   };
 
@@ -281,7 +292,7 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
     }
   };
 
-  const isHost = room?.players.find(p => p.playerId === player?.name)?.isHost || false;
+  const isHost = room?.players.find(p => p.playerId === player?.id)?.isHost || false;
   const allReady = room?.players.every(p => p.isReady || p.isHost) || false;
 
   if (isLoading) {
