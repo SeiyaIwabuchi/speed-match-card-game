@@ -260,30 +260,30 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
     }
 
     try {
-      // まずルームを開始状態に変更
+      // まずゲームを作成
+      const playerIds = room.players.map(p => p.playerId);
       await handleApiCall(
-        () => startGame(room.roomId, { hostId: player.id! }),
-        (startResult) => {
-          console.log('Room started:', startResult);
+        () => createGame({ roomId: room.roomId, playerIds }),
+        (createResult) => {
+          console.log('Game created:', createResult);
           
-          // 次にゲームを作成
-          const playerIds = room.players.map(p => p.playerId);
+          // 次にルームを開始状態に変更
           handleApiCall(
-            () => createGame({ roomId: room.roomId, playerIds }),
-            (createResult) => {
-              console.log('Game created:', createResult);
+            () => startGame(room.roomId, { hostId: player.id! }),
+            (startResult) => {
+              console.log('Room started:', startResult);
               // ホストもポーリングでステータス変更を待つ（全員が同じタイミングで遷移するため）
               // 遷移はloadRoomDataのポーリングで検知される
             },
-            (createError) => {
-              console.error('Failed to create game:', createError);
-              alert(`ゲームの作成に失敗しました: ${createError.message}`);
+            (startError) => {
+              console.error('Failed to start room:', startError);
+              alert(`ルームの開始に失敗しました: ${startError.message}`);
             }
           );
         },
-        (startError) => {
-          console.error('Failed to start room:', startError);
-          alert(`ルームの開始に失敗しました: ${startError.message}`);
+        (createError) => {
+          console.error('Failed to create game:', createError);
+          alert(`ゲームの作成に失敗しました: ${createError.message}`);
         }
       );
     } catch (error) {
