@@ -133,28 +133,32 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
       }
 
       // ゲームが開始されたら全員がゲーム画面に遷移
-      if (roomData.status === 'playing' || roomData.status === 'started') {
-        console.log('Game has started, navigating to game screen');
+      if (roomData.status === 'playing' || roomData.status === 'started' || roomData.gameId) {
+        console.log('Game has started, navigating to game screen. Status:', roomData.status, 'GameId:', roomData.gameId);
         
         // ポーリングを停止
         if (pollingInterval) {
+          console.log('Stopping room polling interval');
           clearInterval(pollingInterval);
           setPollingInterval(null);
         }
         if (chatPollingInterval) {
+          console.log('Stopping chat polling interval');
           clearInterval(chatPollingInterval);
           setChatPollingInterval(null);
         }
-        console.log('Polling stopped due to game start');
         
         if (onNavigate) {
           // gameIdがルーム情報に含まれている場合
           if (roomData.gameId) {
+            console.log('Navigating to game with gameId:', roomData.gameId);
             onNavigate(`game/${roomData.gameId}`);
           } else {
             // フォールバック: ゲーム状態から取得
             try {
+              console.log('Fallback: getting game state for roomId:', roomId);
               const gameState = await getGameState(roomId, player.id);
+              console.log('Got game state:', gameState);
               onNavigate(`game/${gameState.gameId}`);
             } catch (error) {
               console.error('Failed to get game state:', error);
@@ -162,6 +166,7 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
             }
           }
         }
+        return; // 早期リターンで以降の処理をスキップ
       }
     } catch (error) {
       console.error('Failed to load room data:', error);

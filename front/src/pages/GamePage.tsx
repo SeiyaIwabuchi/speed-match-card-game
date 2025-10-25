@@ -33,6 +33,23 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
     }
   }, [gameId]);
 
+  // ゲーム状態の定期更新（5秒ごと、ゲーム中のみ）
+  useEffect(() => {
+    if (!gameState.gameId || gameState.status !== 'PLAYING') {
+      return;
+    }
+
+    console.log('GamePage: Starting game state polling');
+    const interval = setInterval(() => {
+      fetchGameState();
+    }, 5000);
+
+    return () => {
+      console.log('GamePage: Stopping game state polling');
+      clearInterval(interval);
+    };
+  }, [gameState.gameId, gameState.status]);
+
   const handleLeaveGame = () => {
     if (onNavigate) {
       onNavigate('rooms');
