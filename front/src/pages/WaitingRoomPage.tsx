@@ -88,7 +88,9 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
 
     return () => {
       if (chatPollingInterval) {
+        console.log('Cleaning up chat polling interval');
         clearInterval(chatPollingInterval);
+        setChatPollingInterval(null);
       }
     };
   }, [room]);
@@ -105,7 +107,9 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
 
     return () => {
       if (pollingInterval) {
+        console.log('Cleaning up room polling interval');
         clearInterval(pollingInterval);
+        setPollingInterval(null);
       }
     };
   }, [roomCode]);
@@ -131,6 +135,18 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
       // ゲームが開始されたら全員がゲーム画面に遷移
       if (roomData.status === 'playing' || roomData.status === 'started') {
         console.log('Game has started, navigating to game screen');
+        
+        // ポーリングを停止
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          setPollingInterval(null);
+        }
+        if (chatPollingInterval) {
+          clearInterval(chatPollingInterval);
+          setChatPollingInterval(null);
+        }
+        console.log('Polling stopped due to game start');
+        
         if (onNavigate) {
           // gameIdがルーム情報に含まれている場合
           if (roomData.gameId) {

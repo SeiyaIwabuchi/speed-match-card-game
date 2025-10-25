@@ -13,7 +13,10 @@ interface GamePageProps {
 const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
   const { gameId } = useParams<{ gameId: string }>();
   const { player } = useContext(PlayerContext) || {};
-  const { gameState, loading, error, isPlayerTurn, fetchGameState, clearError } = useGame();
+  const { gameState, loading, error, isPlayerTurn, fetchGameState, clearError, handlePlayCard, handleDrawCard, handleSkipTurn } = useGame();
+  
+  // 選択されたカード（GameBoardからの操作用）- フックは最上位で呼び出し
+  const [selectedCardForBoard, setSelectedCardForBoard] = useState<CardDTO | null>(null);
 
   // Player型をPlayerInfo型に変換
   const playerInfo = player ? {
@@ -173,12 +176,6 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
     isCurrentPlayer: p.id === gameState.currentPlayerId,
     isConnected: true // 仮定
   }));
-
-  // 選択されたカード（GameBoardからの操作用）
-  const [selectedCardForBoard, setSelectedCardForBoard] = useState<CardDTO | null>(null);
-
-  // GameContextの関数を事前に取得（hooksルール遵守）
-  const { handlePlayCard, handleDrawCard, handleSkipTurn } = useGame();
 
   // ゲーム中画面
   return (
