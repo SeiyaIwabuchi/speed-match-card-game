@@ -2,15 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Header, Footer, Grid, GridItem, Card, Button, Input } from '../components';
 import { useApiError } from '../hooks/useApiError';
 import { getRooms, joinRoom, getRoomByCode, type RoomListItem } from '../api';
+import type { Player } from '../contexts';
 
 interface RoomsPageProps {
   onNavigate?: (page: string) => void;
-  player?: {
-    name: string;
-    avatar?: string;
-    wins?: number;
-    totalGames?: number;
-  } | null;
+  player?: Player | null;
 }
 
 const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
@@ -105,9 +101,14 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
       return;
     }
 
+    if (!player.id) {
+      alert('プレイヤーIDが見つかりません。再度ログインしてください。');
+      return;
+    }
+
     try {
       await handleApiCall(
-        () => joinRoom(roomId, { playerId: player.name }),
+        () => joinRoom(roomId, { playerId: player.id! }),
         (result) => {
           console.log('Joined room:', result);
           // 待機画面に遷移（roomIdを使用）
@@ -146,6 +147,11 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
       return;
     }
 
+    if (!player.id) {
+      alert('プレイヤーIDが見つかりません。再度ログインしてください。');
+      return;
+    }
+
     try {
       // まずルームコードからルーム情報を取得
       await handleApiCall(
@@ -153,7 +159,7 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
         async (roomData) => {
           // 次にルームに参加
           await handleApiCall(
-            () => joinRoom(roomData.roomId, { playerId: player.name }),
+            () => joinRoom(roomData.roomId, { playerId: player.id! }),
             (joinResult) => {
               console.log('Joined room by code:', joinResult);
               setShowJoinDialog(false);
