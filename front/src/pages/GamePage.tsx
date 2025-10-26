@@ -60,7 +60,7 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
     }
   };
 
-  // ローディング画面
+  // ローディング画面（初回のみ）
   if (loading && !gameState.gameId) {
     return (
       <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
@@ -76,40 +76,6 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
               <div className="p-8">
                 <h2 className="text-2xl font-bold mb-4">読み込み中...</h2>
                 <p className="text-secondary">ゲーム状態を取得しています</p>
-              </div>
-            </Card>
-          </main>
-
-          <Footer />
-        </Container>
-      </div>
-    );
-  }
-
-  // エラー画面
-  if (error) {
-    return (
-      <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-        <Container size="lg" variant="gradient">
-          <Header 
-            title="ゲーム"
-            player={playerInfo}
-            showNavigation={false}
-          />
-          
-          <main className="text-center py-12">
-            <Card variant="elevated" className="max-w-md mx-auto">
-              <div className="p-8">
-                <h2 className="text-2xl font-bold mb-4 text-red-600">エラー</h2>
-                <p className="text-secondary mb-6">{error}</p>
-                <div className="space-y-2">
-                  <Button onClick={() => { clearError(); fetchGameState(); }} disabled={loading}>
-                    再試行
-                  </Button>
-                  <Button variant="secondary" onClick={handleLeaveGame}>
-                    ルーム一覧に戻る
-                  </Button>
-                </div>
               </div>
             </Card>
           </main>
@@ -209,6 +175,31 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
         />
 
         <main className="py-6 space-y-6">
+          {/* エラー通知 */}
+          {error && (
+            <Card variant="elevated" className="p-4 bg-red-50 border-red-200">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-white text-sm font-bold">!</span>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-red-800 mb-1">エラーが発生しました</h3>
+                    <p className="text-xs text-red-700">{error}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => { clearError(); fetchGameState(); }} disabled={loading}>
+                    再試行
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={clearError}>
+                    閉じる
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* デバッグ情報 */}
           <Card variant="elevated" className="p-4 bg-yellow-50 border-yellow-200">
             <h3 className="text-sm font-bold text-yellow-800 mb-2">デバッグ情報</h3>
