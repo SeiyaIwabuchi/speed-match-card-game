@@ -11,9 +11,9 @@ import java.sql.Connection
 object DatabaseFactory {
     fun init(config: ApplicationConfig) {
         val driverClassName = config.property("database.driver").getString()
-        val jdbcURL = config.property("database.url").getString()
-        val user = config.property("database.user").getString()
-        val password = config.property("database.password").getString()
+        val jdbcURL = config.propertyOrNull("database.url")?.getString() ?: System.getenv("DB_URL")
+        val user = config.propertyOrNull("database.user")?.getString() ?: System.getenv("DB_USER")
+        val password = config.propertyOrNull("database.password")?.getString() ?: System.getenv("DB_PASSWORD")
         val maxPoolSize = config.property("database.maxPoolSize").getString().toInt()
         
         val hikariConfig = HikariConfig().apply {

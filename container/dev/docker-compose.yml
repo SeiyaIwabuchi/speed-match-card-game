@@ -21,9 +21,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: speedmatch
+      DB_URL: jdbc:postgresql://postgres:5432/speedmatch
       DB_USER: speedmatch
       DB_PASSWORD: ${DB_PASSWORD}
     depends_on:
