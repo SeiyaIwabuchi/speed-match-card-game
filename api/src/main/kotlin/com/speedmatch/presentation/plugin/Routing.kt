@@ -32,10 +32,6 @@ fun Application.configureRouting() {
             )
         }
 
-        route("/api") {
-            playerRoutes()
-        }
-
         route("/api/v1") {
             get("/hello") {
                 call.respondText("Hello, SpeedMatch API!")

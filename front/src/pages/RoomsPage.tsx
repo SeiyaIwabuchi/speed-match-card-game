@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Header, Footer, Grid, GridItem, Card, Button, Input } from '../components';
 import { useApiError } from '../hooks/useApiError';
-import { getRooms, joinRoom, getRoomByCode, type RoomListItem } from '../api';
+import { getRooms, joinRoom, getRoomByCode, getRoom, type RoomListItem } from '../api';
+import type { Player } from '../contexts';
 
 interface RoomsPageProps {
   onNavigate?: (page: string) => void;
-  player?: {
-    name: string;
-    avatar?: string;
-    wins?: number;
-    totalGames?: number;
-  } | null;
+  player?: Player | null;
 }
 
 const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
@@ -23,20 +19,22 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [joinRoomCode, setJoinRoomCode] = useState('');
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
-  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     loadRooms();
+    
     // ルーム情報を定期的に更新（ポーリング）
     const interval = setInterval(() => {
-      loadRooms();
+      if (isMounted) {
+        loadRooms();
+      }
     }, 5000); // 5秒ごとに更新
-    setPollingInterval(interval);
 
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
+      console.log('RoomsPage: Cleaning up room polling interval');
+      isMounted = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -59,6 +57,11 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
   // フィルター・ソート済みのルーム一覧
   const filteredAndSortedRooms = useMemo(() => {
     let filtered = rooms.filter(room => {
+      // 待機中のルームのみ表示
+      if (room.status !== 'waiting') {
+        return false;
+      }
+      
       // 検索フィルター
       const matchesSearch = (room.roomName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                            room.roomCode.includes(searchTerm);
@@ -70,10 +73,11 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
           matchesFilter = room.currentPlayers < room.maxPlayers;
           break;
         case 'public':
-          matchesFilter = room.status === 'waiting'; // 公開ルームはwaiting状態
+          matchesFilter = room.status === 'waiting';
           break;
         case 'private':
-          matchesFilter = room.status !== 'waiting'; // プライベートは他の状態
+          // 待機中のみ表示するため、privateフィルターは適用しない
+          matchesFilter = true;
           break;
         case 'all':
         default:
@@ -105,19 +109,32 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
       return;
     }
 
+    if (!player.id) {
+      alert('プレイヤーIDが見つかりません。再度ログインしてください。');
+      return;
+    }
+
     try {
+      // まずルーム情報を取得
       await handleApiCall(
-        () => joinRoom(roomId, { playerId: player.name }),
-        (result) => {
-          console.log('Joined room:', result);
-          // 待機画面に遷移（roomIdを使用）
+        () => getRoom(roomId),
+        async (roomData) => {
+          // ルーム参加APIを呼ぶ（エラーでも待機画面に遷移）
+          try {
+            await joinRoom(roomId, { playerId: player.id! });
+            console.log('Successfully joined room:', roomId);
+          } catch (joinError) {
+            console.warn('Join room API failed, but navigating to waiting room anyway:', joinError);
+          }
+          
+          // エラーの有無に関わらず待機画面に遷移
           if (onNavigate) {
-            onNavigate(`waiting-room/${result.roomId}`);
+            onNavigate(`waiting-room/${roomData.roomCode}`);
           }
         },
-        (error) => {
-          console.error('Failed to join room:', error);
-          alert(`ルームへの参加に失敗しました: ${error.message}`);
+        (roomError) => {
+          console.error('Failed to get room data:', roomError);
+          alert(`ルーム情報の取得に失敗しました: ${roomError.message}`);
         }
       );
     } catch (error) {
@@ -146,28 +163,30 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
       return;
     }
 
+    if (!player.id) {
+      alert('プレイヤーIDが見つかりません。再度ログインしてください。');
+      return;
+    }
+
     try {
       // まずルームコードからルーム情報を取得
       await handleApiCall(
         () => getRoomByCode(joinRoomCode.trim()),
         async (roomData) => {
-          // 次にルームに参加
-          await handleApiCall(
-            () => joinRoom(roomData.roomId, { playerId: player.name }),
-            (joinResult) => {
-              console.log('Joined room by code:', joinResult);
-              setShowJoinDialog(false);
-              setJoinRoomCode('');
-              // 待機画面に遷移
-              if (onNavigate) {
-                onNavigate(`waiting-room/${joinResult.roomId}`);
-              }
-            },
-            (joinError) => {
-              console.error('Failed to join room:', joinError);
-              alert(`ルームへの参加に失敗しました: ${joinError.message}`);
-            }
-          );
+          // ルーム参加APIを呼ぶ（エラーでも待機画面に遷移）
+          try {
+            await joinRoom(roomData.roomId, { playerId: player.id! });
+            console.log('Successfully joined room by code:', roomData.roomId);
+          } catch (joinError) {
+            console.warn('Join room API failed, but navigating to waiting room anyway:', joinError);
+          }
+          
+          // エラーの有無に関わらず待機画面に遷移
+          setShowJoinDialog(false);
+          setJoinRoomCode('');
+          if (onNavigate) {
+            onNavigate(`waiting-room/${roomData.roomCode}`);
+          }
         },
         (error) => {
           console.error('Failed to get room by code:', error);
@@ -180,8 +199,8 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-      <Container size="xl" variant="gradient">
+    <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+      <Container size="xl">
         <Header 
           title="ルーム一覧"
           player={player || undefined}
@@ -191,9 +210,9 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
         
         <main>
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="h1">ゲームルーム</h1>
-              <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-4">
+              <h1 className="h1 text-center sm:text-left">ゲームルーム</h1>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <Button 
                   variant="primary" 
                   size="lg"
@@ -224,8 +243,8 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
           </div>
 
           {/* フィルター・検索コントロール */}
-          <div className="mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-lg border border-white/20">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="mb-6 p-3 md:p-4 bg-white/80 backdrop-blur-sm rounded-lg border border-white/20">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               {/* 検索ボックス */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -251,8 +270,6 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
                 >
                   <option value="all">すべて</option>
                   <option value="available">参加可能</option>
-                  <option value="public">公開ルーム</option>
-                  <option value="private">プライベート</option>
                 </select>
               </div>
 
@@ -311,11 +328,6 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
                         <h3 className="text-xl font-bold mb-2">{room.roomName || '無名のルーム'}</h3>
                         <div className="flex items-center gap-2 text-sm text-secondary mb-2">
                           <span>ルームID: {room.roomCode}</span>
-                          {room.status !== 'waiting' && (
-                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">
-                              プライベート
-                            </span>
-                          )}
                         </div>
                       </div>
                       <div className="text-right">

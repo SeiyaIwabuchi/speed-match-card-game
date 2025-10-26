@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
 export interface GameCardProps {
-  number: number;
-  suit: 'hearts' | 'diamonds' | 'clubs' | 'spades';
+  suit: 'SPADES' | 'HEARTS' | 'DIAMONDS' | 'CLUBS';
+  rank: number; // 1-13 (1=A, 11=J, 12=Q, 13=K)
   playable?: boolean;
   selected?: boolean;
   onClick?: () => void;
@@ -12,8 +12,8 @@ export interface GameCardProps {
 }
 
 const GameCard: React.FC<GameCardProps> = ({
-  number,
   suit,
+  rank,
   playable = true,
   selected = false,
   onClick,
@@ -26,16 +26,26 @@ const GameCard: React.FC<GameCardProps> = ({
 
   const getSuitSymbol = (suit: string): string => {
     switch (suit) {
-      case 'hearts': return '♥️';
-      case 'diamonds': return '♦️';
-      case 'clubs': return '♣️';
-      case 'spades': return '♠️';
+      case 'HEARTS': return '♥️';
+      case 'DIAMONDS': return '♦️';
+      case 'CLUBS': return '♣️';
+      case 'SPADES': return '♠️';
       default: return '?';
     }
   };
 
   const getSuitColor = (suit: string): string => {
-    return (suit === 'hearts' || suit === 'diamonds') ? 'text-red-500' : 'text-gray-800';
+    return (suit === 'HEARTS' || suit === 'DIAMONDS') ? 'text-red-500' : 'text-gray-800';
+  };
+
+  const getRankDisplay = (rank: number): string => {
+    switch (rank) {
+      case 1: return 'A';
+      case 11: return 'J';
+      case 12: return 'Q';
+      case 13: return 'K';
+      default: return rank.toString();
+    }
   };
 
   const getSizeClasses = (size: string): string => {
@@ -112,7 +122,7 @@ const GameCard: React.FC<GameCardProps> = ({
       }}
     >
       <div className={`font-bold ${getSuitColor(suit)}`}>
-        {number}
+        {getRankDisplay(rank)}
       </div>
       <div className={`${getSuitColor(suit)}`}>
         {getSuitSymbol(suit)}

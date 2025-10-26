@@ -80,6 +80,7 @@ const CreateRoomPage: React.FC<CreateRoomPageProps> = ({ onNavigate }) => {
           initialHandSize: settings.cardCount,
           turnTimeLimit: settings.timeLimit === 30 ? 30 : settings.timeLimit === 60 ? 60 : 0,
           isPublic: settings.isPublic,
+          hostId: player.id,
         }),
         (result) => {
           console.log('Room created:', result);
@@ -120,8 +121,8 @@ const CreateRoomPage: React.FC<CreateRoomPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-      <Container size="xl" variant="gradient">
+    <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+      <Container size="xl">
         <Header>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-white">新しいルームを作成</h1>

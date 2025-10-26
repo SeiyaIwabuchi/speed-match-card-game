@@ -25,12 +25,9 @@ fun Route.roomRoutes() {
                 logger.info("ルーム作成リクエスト受信")
 
                 val request = call.receive<RoomCreateRequest>()
-                logger.debug("リクエストデータ: roomName=${request.roomName}, maxPlayers=${request.maxPlayers}")
+                logger.debug("リクエストデータ: hostId=${request.hostId}, roomName=${request.roomName}, maxPlayers=${request.maxPlayers}")
 
-                // TODO: 認証からホストIDを取得（暫定で固定値）
-                val hostId = "pl_test_001" // 実際はJWTから取得
-
-                val response = roomService.create(request, hostId)
+                val response = roomService.create(request, request.hostId)
 
                 call.respond(
                     HttpStatusCode.Created,

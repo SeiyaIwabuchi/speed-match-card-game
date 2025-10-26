@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class RoomCreateRequest(
+    val hostId: String,
     val roomName: String? = null,
     val maxPlayers: Int = 4,
     val initialHandSize: Int = 7,
@@ -75,6 +76,7 @@ data class RoomResponse(
     val isPublic: Boolean,
     val status: String,
     val players: List<RoomPlayerInfo>,
+    val gameId: String? = null, // ゲーム開始時のみ設定
     val createdAt: String
 )
 

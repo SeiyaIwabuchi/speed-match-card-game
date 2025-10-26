@@ -2,8 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Container, Header, Footer, Card, Button, Grid, GridItem, ChatBox } from '../components';
 import { PlayerContext } from '../contexts';
 import { useApiError } from '../hooks/useApiError';
-import { getRoom, getRoomByCode, leaveRoom, setReady, sendChatMessage, getChatMessages } from '../api/room';
-import { createGame } from '../api/game';
+import { getRoom, getRoomByCode, leaveRoom, setReady, sendChatMessage, getChatMessages, startGame } from '../api/room';
+import { createGame, getGameState } from '../api/game';
 import type { ChatMessage } from '../api/chat';
 
 interface WaitingRoomPageProps {
@@ -32,6 +32,7 @@ interface Room {
   status: string;
   players: Participant[];
   createdAt: string;
+  gameId?: string; // ゲーム開始後に追加される
 }
 
 const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode }) => {
@@ -75,37 +76,50 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
 
   // チャットメッセージのポーリング
   useEffect(() => {
-    if (room) {
-      loadChatMessages();
-      
-      // 3秒ごとにチャットメッセージを取得
-      const interval = setInterval(() => {
+    if (!room) return;
+    
+    let isMounted = true;
+    loadChatMessages();
+    
+    // 3秒ごとにチャットメッセージを取得
+    const interval = setInterval(() => {
+      if (isMounted) {
         loadChatMessages();
-      }, 3000);
-      setChatPollingInterval(interval);
-    }
+      }
+    }, 3000);
+    setChatPollingInterval(interval);
 
     return () => {
-      if (chatPollingInterval) {
-        clearInterval(chatPollingInterval);
+      console.log('WaitingRoomPage: Cleaning up chat polling interval');
+      isMounted = false;
+      if (interval) {
+        clearInterval(interval);
       }
+      setChatPollingInterval(null);
     };
   }, [room]);
 
   useEffect(() => {
-    if (roomCode) {
-      loadRoomData();
-      // ルーム情報を定期的に更新（ポーリング）
-      const interval = setInterval(() => {
+    if (!roomCode) return;
+    
+    let isMounted = true;
+    loadRoomData();
+    
+    // ルーム情報を定期的に更新（ポーリング）
+    const interval = setInterval(() => {
+      if (isMounted) {
         loadRoomData();
-      }, 3000); // 3秒ごとに更新
-      setPollingInterval(interval);
-    }
+      }
+    }, 3000); // 3秒ごとに更新
+    setPollingInterval(interval);
 
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
+      console.log('WaitingRoomPage: Cleaning up room polling interval');
+      isMounted = false;
+      if (interval) {
+        clearInterval(interval);
       }
+      setPollingInterval(null);
     };
   }, [roomCode]);
 
@@ -125,6 +139,43 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
       const currentParticipant = roomData.players.find((p: Participant) => p.playerId === player.name);
       if (currentParticipant) {
         setIsReady(currentParticipant.isReady);
+      }
+
+      // ゲームが開始されたら全員がゲーム画面に遷移
+      if (roomData.status === 'playing' || roomData.status === 'started' || roomData.gameId) {
+        console.log('Game has started, navigating to game screen. Status:', roomData.status, 'GameId:', roomData.gameId);
+        
+        // ポーリングを停止
+        if (pollingInterval) {
+          console.log('Stopping room polling interval');
+          clearInterval(pollingInterval);
+          setPollingInterval(null);
+        }
+        if (chatPollingInterval) {
+          console.log('Stopping chat polling interval');
+          clearInterval(chatPollingInterval);
+          setChatPollingInterval(null);
+        }
+        
+        if (onNavigate) {
+          // gameIdがルーム情報に含まれている場合
+          if (roomData.gameId) {
+            console.log('Navigating to game with gameId:', roomData.gameId);
+            onNavigate(`game/${roomData.gameId}`);
+          } else {
+            // フォールバック: ゲーム状態から取得
+            try {
+              console.log('Fallback: getting game state for roomId:', roomId);
+              const gameState = await getGameState(roomId, player.id);
+              console.log('Got game state:', gameState);
+              onNavigate(`game/${gameState.gameId}`);
+            } catch (error) {
+              console.error('Failed to get game state:', error);
+              alert("ゲーム状態の取得に失敗しました。");
+            }
+          }
+        }
+        return; // 早期リターンで以降の処理をスキップ
       }
     } catch (error) {
       console.error('Failed to load room data:', error);
@@ -187,7 +238,7 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
 
     try {
       await handleApiCall(
-        () => setReady(room.roomId, { playerId: player.name, isReady: newReadyStatus }),
+        () => setReady(room.roomId, { playerId: player.id, isReady: newReadyStatus }),
         (result) => {
           console.log('Ready status updated:', result);
           // ルーム情報を再取得して同期
@@ -239,25 +290,34 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
     }
 
     try {
-      // プレイヤーIDのリストを作成
+      // まずゲームを作成
       const playerIds = room.players.map(p => p.playerId);
-
       await handleApiCall(
         () => createGame({ roomId: room.roomId, playerIds }),
-        (result) => {
-          console.log('Game created:', result);
-          // ゲーム画面に遷移
-          if (onNavigate) {
-            onNavigate(`game/${result.gameId}`);
-          }
+        (createResult) => {
+          console.log('Game created:', createResult);
+          
+          // 次にルームを開始状態に変更
+          handleApiCall(
+            () => startGame(room.roomId, { hostId: player.id! }),
+            (startResult) => {
+              console.log('Room started:', startResult);
+              // ホストもポーリングでステータス変更を待つ（全員が同じタイミングで遷移するため）
+              // 遷移はloadRoomDataのポーリングで検知される
+            },
+            (startError) => {
+              console.error('Failed to start room:', startError);
+              alert(`ルームの開始に失敗しました: ${startError.message}`);
+            }
+          );
         },
-        (error) => {
-          console.error('Failed to create game:', error);
-          alert(`ゲームの作成に失敗しました: ${error.message}`);
+        (createError) => {
+          console.error('Failed to create game:', createError);
+          alert(`ゲームの作成に失敗しました: ${createError.message}`);
         }
       );
     } catch (error) {
-      console.error('Failed to create game:', error);
+      console.error('Failed to start game:', error);
     }
   };
 
@@ -281,13 +341,13 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
     }
   };
 
-  const isHost = room?.players.find(p => p.playerId === player?.name)?.isHost || false;
+  const isHost = room?.players.find(p => p.playerId === player?.id)?.isHost || false;
   const allReady = room?.players.every(p => p.isReady || p.isHost) || false;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-        <Container size="xl" variant="gradient">
+      <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+        <Container size="xl">
           <div className="flex items-center justify-center min-h-screen">
             <div className="text-white text-lg">ルーム情報を読み込み中...</div>
           </div>
@@ -298,8 +358,8 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
 
   if (!room) {
     return (
-      <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-        <Container size="xl" variant="gradient">
+      <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+        <Container size="xl">
           <div className="flex items-center justify-center min-h-screen">
             <Card variant="elevated" className="p-8 text-center">
               <h2 className="text-xl font-bold mb-4">ルームが見つかりません</h2>
@@ -318,8 +378,8 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-      <Container size="xl" variant="gradient">
+    <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+      <Container size="xl">
         <Header>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-white">{room.roomName || 'ルーム'}</h1>

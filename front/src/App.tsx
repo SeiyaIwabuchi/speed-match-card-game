@@ -6,8 +6,8 @@ import './App.css';
 
 // WaitingRoomPageのラッパーコンポーネント
 const WaitingRoomPageWrapper: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
-  const { roomId } = useParams<{ roomId: string }>();
-  return <WaitingRoomPage onNavigate={onNavigate} roomCode={roomId} />;
+  const { roomCode } = useParams<{ roomCode: string }>();
+  return <WaitingRoomPage onNavigate={onNavigate} roomCode={roomCode} />;
 };
 
 // ナビゲーション機能を持つルーターコンポーネント
@@ -107,7 +107,7 @@ const AppRoutes: React.FC = () => {
         } 
       />
       <Route 
-        path="/waiting-room/:roomId" 
+        path="/waiting-room/:roomCode" 
         element={
           <WaitingRoomPageWrapper 
             onNavigate={handleNavigate}
@@ -115,7 +115,7 @@ const AppRoutes: React.FC = () => {
         } 
       />
       <Route 
-        path="/game/:roomId" 
+        path="/game/:gameId" 
         element={
           <GamePage 
             onNavigate={handleNavigate}

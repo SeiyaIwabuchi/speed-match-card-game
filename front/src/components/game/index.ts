@@ -1,6 +1,12 @@
 export { default as GameCard } from './GameCard';
 export type { GameCardProps } from './GameCard';
 export { default as GameBoard } from './GameBoard';
-export type { GameBoardProps, CardData } from './GameBoard';
+export type { GameBoardProps } from './GameBoard';
 export { default as GameStats } from './GameStats';
 export type { GameStatsProps } from './GameStats';
+export { default as PlayerHand } from './PlayerHand';
+export type { PlayerHandProps, CardDTO } from './PlayerHand';
+export { default as PlayerList } from './PlayerList';
+export type { PlayerListProps, PlayerDTO } from './PlayerList';
+export { default as GameActions } from './GameActions';
+export type { GameActionsProps } from './GameActions';

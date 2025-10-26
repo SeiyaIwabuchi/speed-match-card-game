@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Header, Footer, Card, Button, Input, ErrorMessage } from '../components';
 import { usePlayer } from '../contexts';
 import { useApiError } from '../hooks/useApiError';
@@ -23,7 +23,7 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
   onNavigate, 
   onRegistrationComplete 
 }) => {
-  const { setPlayer } = usePlayer();
+  const { player, setPlayer } = usePlayer();
   const { hasError, error, clearError, handleApiCall } = useApiError();
   
   const [formData, setFormData] = useState<FormData>({
@@ -33,6 +33,16 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
   
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // すでに登録済みのユーザーはホーム画面にリダイレクト
+  useEffect(() => {
+    if (player) {
+      console.log('すでに登録済みのユーザーが登録画面にアクセスしました。ホーム画面にリダイレクトします。');
+      if (onNavigate) {
+        onNavigate('home');
+      }
+    }
+  }, [player, onNavigate]);
 
   // プリセットアバターリスト
   const presetAvatars = [
@@ -135,8 +145,8 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-      <Container size="md" variant="gradient">
+    <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+      <Container size="md">
         <Header title="プレイヤー登録" showNavigation={false} />
         
         <main className="py-8">
@@ -189,13 +199,13 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
                   {/* プリセットアバター */}
                   <div className="mb-4">
                     <p className="text-sm text-secondary mb-3">プリセットから選択：</p>
-                    <div className="grid grid-cols-8 gap-2">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                       {presetAvatars.map((avatar, index) => (
                         <button
                           key={index}
                           type="button"
                           onClick={() => handleAvatarSelect(avatar)}
-                          className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xl transition-all ${
+                          className={`w-full aspect-square rounded-lg border-2 flex items-center justify-center text-xl sm:text-2xl transition-all ${
                             formData.avatar === avatar
                               ? 'border-primary-500 bg-primary-50 scale-110'
                               : 'border-gray-200 hover:border-primary-300 hover:bg-primary-25'

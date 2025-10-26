@@ -22,6 +22,7 @@ export interface RoomResponse {
   status: string;
   players: RoomPlayerInfo[];
   createdAt: string;
+  gameId?: string; // ゲーム開始後に追加される
 }
 
 export interface RoomListItem {
@@ -62,6 +63,7 @@ export interface RoomCreateRequest {
   initialHandSize?: number;
   turnTimeLimit?: number;
   isPublic?: boolean;
+  hostId?: string;
 }
 
 export interface RoomJoinRequest {
@@ -73,7 +75,7 @@ export interface RoomLeaveRequest {
 }
 
 export interface RoomReadyRequest {
-  playerId: string;
+  playerId?: string;
   isReady: boolean;
 }
 
