@@ -1,5 +1,4 @@
 #!/bin/bash
-source /home/ec2-user/speedmatch-config.sh
 cd /home/ec2-user/speedmatch/container/dev
-sudo docker-compose build
-sudo docker-compose up -d
+sudo docker-compose build --env-file /home/ec2-user/speedmatch-config.env
+sudo docker-compose up --env-file /home/ec2-user/speedmatch-config.env -d
