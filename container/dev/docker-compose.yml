@@ -13,6 +13,11 @@ services:
       - "5432:5432"
     networks:
       - speedmatch-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U speedmatch -d speedmatch"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   ktor-app:
     build:
@@ -25,7 +30,8 @@ services:
       DB_USER: speedmatch
       DB_PASSWORD: ${DB_PASSWORD}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - speedmatch-network
 
