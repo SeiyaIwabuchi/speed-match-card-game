@@ -116,8 +116,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-      <Container size="lg" variant="gradient">
+    <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+      <Container size="lg">
         <Header 
           title="プロフィール"
           player={player || undefined}

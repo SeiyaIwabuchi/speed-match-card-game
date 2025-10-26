@@ -145,8 +145,8 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-      <Container size="md" variant="gradient">
+    <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+      <Container size="md">
         <Header title="プレイヤー登録" showNavigation={false} />
         
         <main className="py-8">
@@ -199,13 +199,13 @@ const PlayerRegistrationPage: React.FC<PlayerRegistrationPageProps> = ({
                   {/* プリセットアバター */}
                   <div className="mb-4">
                     <p className="text-sm text-secondary mb-3">プリセットから選択：</p>
-                    <div className="grid grid-cols-8 gap-2">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                       {presetAvatars.map((avatar, index) => (
                         <button
                           key={index}
                           type="button"
                           onClick={() => handleAvatarSelect(avatar)}
-                          className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xl transition-all ${
+                          className={`w-full aspect-square rounded-lg border-2 flex items-center justify-center text-xl sm:text-2xl transition-all ${
                             formData.avatar === avatar
                               ? 'border-primary-500 bg-primary-50 scale-110'
                               : 'border-gray-200 hover:border-primary-300 hover:bg-primary-25'

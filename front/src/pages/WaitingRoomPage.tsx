@@ -346,8 +346,8 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-        <Container size="xl" variant="gradient">
+      <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+        <Container size="xl">
           <div className="flex items-center justify-center min-h-screen">
             <div className="text-white text-lg">ルーム情報を読み込み中...</div>
           </div>
@@ -358,8 +358,8 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
 
   if (!room) {
     return (
-      <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-        <Container size="xl" variant="gradient">
+      <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+        <Container size="xl">
           <div className="flex items-center justify-center min-h-screen">
             <Card variant="elevated" className="p-8 text-center">
               <h2 className="text-xl font-bold mb-4">ルームが見つかりません</h2>
@@ -378,8 +378,8 @@ const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ onNavigate, roomCode 
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-      <Container size="xl" variant="gradient">
+    <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+      <Container size="xl">
         <Header>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-white">{room.roomName || 'ルーム'}</h1>

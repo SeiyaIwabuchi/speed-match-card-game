@@ -63,8 +63,8 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
   // ローディング画面（初回のみ）
   if (loading && !gameState.gameId) {
     return (
-      <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-        <Container size="lg" variant="gradient">
+      <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+        <Container size="lg">
           <Header 
             title="ゲーム"
             player={playerInfo}
@@ -98,8 +98,8 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
     const isWinner = winner?.id === player?.id || winner?.id === player?.name;
     
     return (
-      <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-        <Container size="lg" variant="gradient">
+      <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+        <Container size="lg">
           <Header 
             title="ゲーム終了"
             player={playerInfo}
@@ -134,8 +134,8 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
   // ゲーム状態が不完全な場合
   if (!gameState.fieldCards) {
     return (
-      <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-        <Container size="lg" variant="gradient">
+      <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+        <Container size="lg">
           <Header 
             title="ゲーム"
             player={playerInfo}
@@ -172,8 +172,8 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
 
   // ゲーム中画面
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-      <Container size="lg" variant="gradient">
+    <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+      <Container size="lg">
         <Header
           title="ゲーム中"
           player={playerInfo}

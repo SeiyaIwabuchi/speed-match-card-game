@@ -199,8 +199,8 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
-      <Container size="xl" variant="gradient">
+    <div className="min-h-screen" style={{ background: 'var(--color-background-light-blue)' }}>
+      <Container size="xl">
         <Header 
           title="ルーム一覧"
           player={player || undefined}
@@ -210,9 +210,9 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
         
         <main>
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="h1">ゲームルーム</h1>
-              <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-4">
+              <h1 className="h1 text-center sm:text-left">ゲームルーム</h1>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <Button 
                   variant="primary" 
                   size="lg"
@@ -243,8 +243,8 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
           </div>
 
           {/* フィルター・検索コントロール */}
-          <div className="mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-lg border border-white/20">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="mb-6 p-3 md:p-4 bg-white/80 backdrop-blur-sm rounded-lg border border-white/20">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               {/* 検索ボックス */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
