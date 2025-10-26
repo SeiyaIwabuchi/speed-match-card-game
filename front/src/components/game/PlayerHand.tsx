@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '../ui';
 import GameCard from './GameCard';
+import './PlayerHand.css';
 
 export interface CardDTO {
   suit: 'SPADES' | 'HEARTS' | 'DIAMONDS' | 'CLUBS';
@@ -92,68 +93,90 @@ const PlayerHand: React.FC<PlayerHandProps> = ({
   };
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`playerHand ${className}`}>
       <Card variant="elevated" className="p-6">
         <div className="text-center">
           <h3 className="text-lg font-bold mb-4">あなたの手札 ({hand.length}枚)</h3>
 
+          {!isPlayerTurn && (
+            <p className="turnMessage">
+              他のプレイヤーのターンです
+            </p>
+          )}
+
+          {isPlayerTurn && !selectedCard && hand.length > 0 && (
+            <div className="guidanceBox">
+              <p className="guidanceText">
+                ⬆️ プレイ可能なカードをクリックしてください
+              </p>
+            </div>
+          )}
+
           {hand.length === 0 ? (
             <p className="text-secondary">手札がありません</p>
           ) : (
-            <div className="flex gap-2 justify-center flex-wrap">
+            <div className="cardContainer">
               {hand.map((card, index) => {
                 const playable = isCardPlayable(card);
                 const isSelected = selectedCard?.suit === card.suit && selectedCard?.rank === card.rank;
 
                 return (
-                  <GameCard
+                  <div
                     key={`${card.suit}-${card.rank}-${index}`}
-                    suit={card.suit}
-                    rank={card.rank}
-                    playable={playable}
-                    selected={isSelected}
-                    onClick={() => handleCardClick(card)}
-                    size="md"
-                    className={!playable ? 'opacity-60' : ''}
-                  />
+                    className={`cardWrapper ${
+                      playable ? 'cardWrapper--playable' : 'cardWrapper--notPlayable'
+                    } ${
+                      isSelected ? 'cardWrapper--selected' : ''
+                    }`}
+                  >
+                    <GameCard
+                      suit={card.suit}
+                      rank={card.rank}
+                      playable={playable}
+                      selected={isSelected}
+                      onClick={() => handleCardClick(card)}
+                      size="md"
+                      className={!playable ? 'opacity-60' : ''}
+                    />
+                  </div>
                 );
               })}
             </div>
           )}
 
           {selectedCard && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-medium text-blue-800 mb-2">
-                カードを選択しました: {selectedCard.suit} {selectedCard.rank === 1 ? 'A' : selectedCard.rank === 11 ? 'J' : selectedCard.rank === 12 ? 'Q' : selectedCard.rank === 13 ? 'K' : selectedCard.rank}
+            <div className="selectionBox">
+              <p className="selectionTitle">
+                選択中: {selectedCard.suit} {selectedCard.rank === 1 ? 'A' : selectedCard.rank === 11 ? 'J' : selectedCard.rank === 12 ? 'Q' : selectedCard.rank === 13 ? 'K' : selectedCard.rank}
               </p>
-              <p className="text-sm text-blue-600 mb-2">
-                どちらの場札に出しますか？
+              <p className="selectionGuidance">
+                ⬇️ 下の場札をクリックしてカードをプレイしてください
               </p>
-              <div className="flex justify-center gap-4">
+              <div className="buttonGroup">
                 <button
                   onClick={() => handleFieldSelect(0)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  className="fieldButton"
                 >
                   場札1 ({fieldCards.first.suit} {fieldCards.first.rank === 1 ? 'A' : fieldCards.first.rank === 11 ? 'J' : fieldCards.first.rank === 12 ? 'Q' : fieldCards.first.rank === 13 ? 'K' : fieldCards.first.rank})
                 </button>
                 <button
                   onClick={() => handleFieldSelect(1)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  className="fieldButton"
                 >
                   場札2 ({fieldCards.second.suit} {fieldCards.second.rank === 1 ? 'A' : fieldCards.second.rank === 11 ? 'J' : fieldCards.second.rank === 12 ? 'Q' : fieldCards.second.rank === 13 ? 'K' : fieldCards.second.rank})
+                </button>
+                <button
+                  onClick={() => setSelectedCard(null)}
+                  className="cancelButton"
+                >
+                  キャンセル
                 </button>
               </div>
             </div>
           )}
 
-          {!isPlayerTurn && (
-            <p className="text-sm text-secondary mt-4">
-              他のプレイヤーのターンです
-            </p>
-          )}
-
           {isPlayerTurn && hand.length > 0 && (
-            <p className="text-sm text-green-600 mt-4">
+            <p className="yourTurnMessage">
               あなたのターンです！ カードをクリックしてプレイしてください
             </p>
           )}

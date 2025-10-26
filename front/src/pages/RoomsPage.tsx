@@ -57,6 +57,11 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
   // フィルター・ソート済みのルーム一覧
   const filteredAndSortedRooms = useMemo(() => {
     let filtered = rooms.filter(room => {
+      // 待機中のルームのみ表示
+      if (room.status !== 'waiting') {
+        return false;
+      }
+      
       // 検索フィルター
       const matchesSearch = (room.roomName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                            room.roomCode.includes(searchTerm);
@@ -68,10 +73,11 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
           matchesFilter = room.currentPlayers < room.maxPlayers;
           break;
         case 'public':
-          matchesFilter = room.status === 'waiting'; // 公開ルームはwaiting状態
+          matchesFilter = room.status === 'waiting';
           break;
         case 'private':
-          matchesFilter = room.status !== 'waiting'; // プライベートは他の状態
+          // 待機中のみ表示するため、privateフィルターは適用しない
+          matchesFilter = true;
           break;
         case 'all':
         default:
@@ -109,28 +115,26 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
     }
 
     try {
+      // まずルーム情報を取得
       await handleApiCall(
-        () => joinRoom(roomId, { playerId: player.id! }),
-        async (result) => {
-          console.log('Joined room:', result);
-          // ルーム情報を取得してroomCodeを取得
-          await handleApiCall(
-            () => getRoom(result.roomId),
-            (roomData) => {
-              // 待機画面に遷移（roomCodeを使用）
-              if (onNavigate) {
-                onNavigate(`waiting-room/${roomData.roomCode}`);
-              }
-            },
-            (roomError) => {
-              console.error('Failed to get room data:', roomError);
-              alert(`ルーム情報の取得に失敗しました: ${roomError.message}`);
-            }
-          );
+        () => getRoom(roomId),
+        async (roomData) => {
+          // ルーム参加APIを呼ぶ（エラーでも待機画面に遷移）
+          try {
+            await joinRoom(roomId, { playerId: player.id! });
+            console.log('Successfully joined room:', roomId);
+          } catch (joinError) {
+            console.warn('Join room API failed, but navigating to waiting room anyway:', joinError);
+          }
+          
+          // エラーの有無に関わらず待機画面に遷移
+          if (onNavigate) {
+            onNavigate(`waiting-room/${roomData.roomCode}`);
+          }
         },
-        (error) => {
-          console.error('Failed to join room:', error);
-          alert(`ルームへの参加に失敗しました: ${error.message}`);
+        (roomError) => {
+          console.error('Failed to get room data:', roomError);
+          alert(`ルーム情報の取得に失敗しました: ${roomError.message}`);
         }
       );
     } catch (error) {
@@ -169,23 +173,20 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
       await handleApiCall(
         () => getRoomByCode(joinRoomCode.trim()),
         async (roomData) => {
-          // 次にルームに参加
-          await handleApiCall(
-            () => joinRoom(roomData.roomId, { playerId: player.id! }),
-            (joinResult) => {
-              console.log('Joined room by code:', joinResult);
-              setShowJoinDialog(false);
-              setJoinRoomCode('');
-              // 待機画面に遷移（roomCodeを使用）
-              if (onNavigate) {
-                onNavigate(`waiting-room/${roomData.roomCode}`);
-              }
-            },
-            (joinError) => {
-              console.error('Failed to join room:', joinError);
-              alert(`ルームへの参加に失敗しました: ${joinError.message}`);
-            }
-          );
+          // ルーム参加APIを呼ぶ（エラーでも待機画面に遷移）
+          try {
+            await joinRoom(roomData.roomId, { playerId: player.id! });
+            console.log('Successfully joined room by code:', roomData.roomId);
+          } catch (joinError) {
+            console.warn('Join room API failed, but navigating to waiting room anyway:', joinError);
+          }
+          
+          // エラーの有無に関わらず待機画面に遷移
+          setShowJoinDialog(false);
+          setJoinRoomCode('');
+          if (onNavigate) {
+            onNavigate(`waiting-room/${roomData.roomCode}`);
+          }
         },
         (error) => {
           console.error('Failed to get room by code:', error);
@@ -269,8 +270,6 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
                 >
                   <option value="all">すべて</option>
                   <option value="available">参加可能</option>
-                  <option value="public">公開ルーム</option>
-                  <option value="private">プライベート</option>
                 </select>
               </div>
 
@@ -329,11 +328,6 @@ const RoomsPage: React.FC<RoomsPageProps> = ({ onNavigate, player }) => {
                         <h3 className="text-xl font-bold mb-2">{room.roomName || '無名のルーム'}</h3>
                         <div className="flex items-center gap-2 text-sm text-secondary mb-2">
                           <span>ルームID: {room.roomCode}</span>
-                          {room.status !== 'waiting' && (
-                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">
-                              プライベート
-                            </span>
-                          )}
                         </div>
                       </div>
                       <div className="text-right">

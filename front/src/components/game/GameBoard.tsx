@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '../ui';
 import GameCard from './GameCard';
+import './GameBoard.css';
 
 export interface FieldCardsDTO {
   first: {
@@ -61,18 +62,22 @@ const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`gameBoard ${className}`}>
       <Card variant="elevated" className="p-6">
         <div className="text-center">
           <h3 className="text-lg font-bold mb-6">場札</h3>
 
-          <div className="flex justify-center gap-8">
+          <div className="fieldsContainer">
             {/* 1番目の場札 */}
             <div
-              className={`relative ${onFieldClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''} ${
-                selectedCard && isFieldPlayable(0) ? 'ring-2 ring-green-500 ring-opacity-75' : ''
+              className={`fieldCard ${
+                selectedCard && onFieldClick
+                  ? isFieldPlayable(0)
+                    ? 'fieldCard--playable'
+                    : 'fieldCard--notPlayable'
+                  : ''
               }`}
-              onClick={() => handleFieldClick(0)}
+              onClick={() => selectedCard && isFieldPlayable(0) && handleFieldClick(0)}
             >
               <GameCard
                 suit={fieldCards.first.suit}
@@ -80,8 +85,17 @@ const GameBoard: React.FC<GameBoardProps> = ({
                 playable={false}
                 size="lg"
               />
-              {onFieldClick && (
-                <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              {selectedCard && onFieldClick && (
+                <div className={`fieldBadge ${
+                  isFieldPlayable(0)
+                    ? 'fieldBadge--playable'
+                    : 'fieldBadge--notPlayable'
+                }`}>
+                  1
+                </div>
+              )}
+              {!selectedCard && onFieldClick && (
+                <div className="fieldBadge fieldBadge--default">
                   1
                 </div>
               )}
@@ -89,10 +103,14 @@ const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* 2番目の場札 */}
             <div
-              className={`relative ${onFieldClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''} ${
-                selectedCard && isFieldPlayable(1) ? 'ring-2 ring-green-500 ring-opacity-75' : ''
+              className={`fieldCard ${
+                selectedCard && onFieldClick
+                  ? isFieldPlayable(1)
+                    ? 'fieldCard--playable'
+                    : 'fieldCard--notPlayable'
+                  : ''
               }`}
-              onClick={() => handleFieldClick(1)}
+              onClick={() => selectedCard && isFieldPlayable(1) && handleFieldClick(1)}
             >
               <GameCard
                 suit={fieldCards.second.suit}
@@ -100,17 +118,34 @@ const GameBoard: React.FC<GameBoardProps> = ({
                 playable={false}
                 size="lg"
               />
-              {onFieldClick && (
-                <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              {selectedCard && onFieldClick && (
+                <div className={`fieldBadge ${
+                  isFieldPlayable(1)
+                    ? 'fieldBadge--playable'
+                    : 'fieldBadge--notPlayable'
+                }`}>
+                  2
+                </div>
+              )}
+              {!selectedCard && onFieldClick && (
+                <div className="fieldBadge fieldBadge--default">
                   2
                 </div>
               )}
             </div>
           </div>
 
-          {onFieldClick && (
-            <p className="text-sm text-secondary mt-4">
-              カードをプレイしたい位置をクリックしてください
+          {selectedCard && onFieldClick && (
+            <div className="guidanceBox">
+              <p className="guidanceText">
+                🟢 緑色に光っている場札をクリックできます
+              </p>
+            </div>
+          )}
+
+          {!selectedCard && onFieldClick && (
+            <p className="selectCardMessage">
+              まず手札からカードを選択してください
             </p>
           )}
 

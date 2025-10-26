@@ -88,8 +88,14 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
 
   // ゲーム終了画面
   if (gameState.status === 'FINISHED') {
+    console.log('Game finished. gameState.players:', gameState.players);
+    console.log('Looking for rank 1...');
     const winner = gameState.players.find(p => p.rank === 1);
-    const isWinner = winner?.id === player?.id;
+    console.log('Winner found:', winner);
+    console.log('Current player:', player);
+    console.log('player.id:', player?.id);
+    console.log('player.name:', player?.name);
+    const isWinner = winner?.id === player?.id || winner?.id === player?.name;
     
     return (
       <div className="min-h-screen" style={{ background: 'var(--color-background-gradient)' }}>
@@ -110,7 +116,7 @@ const GamePageContent: React.FC<GamePageProps> = ({ onNavigate }) => {
                   {isWinner ? 'おめでとうございます！' : 'ゲーム終了'}
                 </h2>
                 <p className="text-secondary mb-6">
-                  {isWinner ? 'あなたの勝利です！' : `勝者: ${winner?.id}`}
+                  {isWinner ? 'あなたの勝利です！' : winner ? `勝者: ${winner.id}` : 'ゲーム結果取得中...'}
                 </p>
                 <Button variant="secondary" onClick={handleLeaveGame}>
                   ルーム一覧に戻る
